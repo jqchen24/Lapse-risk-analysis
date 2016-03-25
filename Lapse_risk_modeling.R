@@ -36,3 +36,5 @@ accounts_test <- subset(accounts, spl == F)
 table(accounts_train$churn)/nrow(accounts_train)
 # The distribution of churn in the training data is the same as in original data.
 
+# Build a logistic regression model
+logReg <- glm(churn ~., data = accounts_train, family = binomial)
