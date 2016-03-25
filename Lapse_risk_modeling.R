@@ -38,3 +38,7 @@ table(accounts_train$churn)/nrow(accounts_train)
 
 # Build a logistic regression model
 logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile, data = accounts_train, family = binomial)
+# Evaluate the model
+predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
+table(accounts_test$churn, predict_logReg >= 0.5)
+# accuracy is (50828 + 4025)/nrow(accounts_test) = 79.2%
