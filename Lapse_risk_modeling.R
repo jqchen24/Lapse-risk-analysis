@@ -11,6 +11,14 @@ table(accounts$mro_decile)
 table(accounts$indseg0)
 # 22.7% accounts lapsed in the data.
 table(accounts$churn)/nrow(accounts)
+sort(tapply(accounts$churn, accounts$indseg0, mean), decreasing = T)
+table(accounts$churn, accounts$indseg0)
+sort(tapply(accounts$churn, accounts$Customer_Size, mean), decreasing = T)
+table(accounts$churn, accounts$Customer_Size)
+# Looks like indseg0 and customer_size are two factors that can
+# separate churn and non-churn.
+sort(tapply(accounts$churn, accounts$CONTRACT_FLAG, mean), decreasing = T)
+table(accounts$churn, accounts$CONTRACT_FLAG)
 
 # split the dataset to training/test
 library(caTools)
@@ -20,3 +28,4 @@ accounts_train <- subset(accounts, spl == T)
 accounts_test <- subset(accounts, spl == F)
 table(accounts_train$churn)/nrow(accounts_train)
 # The distribution of churn in the training data is the same as in original data.
+
