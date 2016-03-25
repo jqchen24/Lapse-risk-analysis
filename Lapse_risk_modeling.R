@@ -42,3 +42,7 @@ logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile, data = a
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 table(accounts_test$churn, predict_logReg >= 0.5)
 # accuracy is (50828 + 4025)/nrow(accounts_test) = 79.2%
+
+# Baseline model -- predict all the accounts to remain?
+table(accounts_test$churn)
+# Baseline model accuracy is 77.3%.
