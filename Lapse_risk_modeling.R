@@ -11,3 +11,12 @@ table(accounts$mro_decile)
 table(accounts$indseg0)
 # 22.7% accounts lapsed in the data.
 table(accounts$churn)/nrow(accounts)
+
+# split the dataset to training/test
+library(caTools)
+set.seed(88)
+spl <- sample.split(accounts$churn, SplitRatio = 0.8)
+accounts_train <- subset(accounts, spl == T)
+accounts_test <- subset(accounts, spl == F)
+table(accounts_train$churn)/nrow(accounts_train)
+# The distribution of churn in the training data is the same as in original data.
