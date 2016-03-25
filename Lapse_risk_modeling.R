@@ -19,6 +19,13 @@ table(accounts$churn, accounts$Customer_Size)
 # separate churn and non-churn.
 sort(tapply(accounts$churn, accounts$CONTRACT_FLAG, mean), decreasing = T)
 table(accounts$churn, accounts$CONTRACT_FLAG)
+sort(tapply(accounts$churn, accounts$multisite, mean), decreasing = T)
+# INVSOLFLG is also important
+sort(tapply(accounts$churn, accounts$INVSOLFLG, mean), decreasing = T)
+# mro_decile is significant
+sort(tapply(accounts$churn, accounts$mro_decile, mean), decreasing = T)
+sort(tapply(accounts$churn, accounts$contract_group, mean), decreasing = T)
+
 
 # split the dataset to training/test
 library(caTools)
