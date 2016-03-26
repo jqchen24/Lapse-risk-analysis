@@ -1,16 +1,26 @@
+##########################################
+# Load the dataset and remove account # #
+##########################################
 accounts <- read.csv('accounts_churn_contact_flag.csv', stringsAsFactors = F)
 str(accounts)
 accounts$ ï..account <- NULL
+
+# Create some histograms
 library(ggplot2)
 ggplot(accounts, aes(RECENCY)) + geom_bar()
 ggplot(accounts, aes(TENURE)) + geom_bar()
+
+# Some EDA
 names(accounts)
 table(accounts$Customer_Size)
 table(accounts$CONTRACT_FLAG)
 table(accounts$mro_decile)
 table(accounts$indseg0)
+
 # 22.7% accounts lapsed in the data.
 table(accounts$churn)/nrow(accounts)
+
+# Check how the churn values are distributed across different categorical variables.
 sort(tapply(accounts$churn, accounts$indseg0, mean), decreasing = T)
 table(accounts$churn, accounts$indseg0)
 sort(tapply(accounts$churn, accounts$Customer_Size, mean), decreasing = T)
@@ -26,7 +36,6 @@ sort(tapply(accounts$churn, accounts$INVSOLFLG, mean), decreasing = T)
 sort(tapply(accounts$churn, accounts$mro_decile, mean), decreasing = T)
 sort(tapply(accounts$churn, accounts$contract_group, mean), decreasing = T)
 
-
 # split the dataset to training/test
 library(caTools)
 set.seed(88)
@@ -36,7 +45,9 @@ accounts_test <- subset(accounts, spl == F)
 table(accounts_train$churn)/nrow(accounts_train)
 # The distribution of churn in the training data is the same as in original data.
 
+########################################################
 # Build a logistic regression model
+########################################################
 logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile, data = accounts_train, family = binomial)
 # Evaluate the model
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
