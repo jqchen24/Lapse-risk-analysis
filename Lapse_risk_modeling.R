@@ -54,9 +54,9 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile + multisite, data = accounts_train, family = binomial)
+logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile + contract_group, data = accounts_train, family = binomial)
 # Evaluate the model
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 table(accounts_test$churn, predict_logReg >= 0.5)
-# accuracy is (51344 +  3759)/nrow(accounts_test) = 79.5%
+# accuracy is (50482 +  4691)/nrow(accounts_test) = 79.65%
 
