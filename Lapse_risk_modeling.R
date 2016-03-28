@@ -36,7 +36,6 @@ sort(tapply(accounts$churn, accounts$INVSOLFLG, mean), decreasing = T)
 sort(tapply(accounts$churn, accounts$mro_decile, mean), decreasing = T)
 sort(tapply(accounts$churn, accounts$contract_group, mean), decreasing = T)
 
-
 # split the dataset to training/test
 library(caTools)
 set.seed(88)
