@@ -55,7 +55,7 @@ table(accounts_test$churn)
 # Build a logistic regression model
 ########################################################
 logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + SALES12X + LINES12X + IVSLN12X + 
-                IVSLS12X + contract_group, data = accounts_train, family = binomial)
+                contract_group, data = accounts_train, family = binomial)
 
 # Evaluate the model
 library(caret)
