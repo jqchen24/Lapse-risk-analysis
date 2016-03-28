@@ -54,7 +54,7 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile, data = accounts_train, family = binomial)
+logReg <- glm(churn ~ indseg0 + Customer_Size + INVSOLFLG + mro_decile + multisite + CONTRACT_FLAG + contact_count, data = accounts_train, family = binomial)
 # Evaluate the model
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 table(accounts_test$churn, predict_logReg >= 0.5)
