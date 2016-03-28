@@ -39,7 +39,8 @@ sort(tapply(accounts$churn, accounts$contract_group, mean), decreasing = T)
 #######################################################
 # Feature engineering
 #######################################################
-accounts$discount = (accounts$WA_S12X - (accounts$SALES12X - accounts$FINDS12X))/accounts$WA_S12X
+library(dplyr)
+accounts <- mutate(accounts, discount = (WA_S12X - (SALES12X - FINDS12X))/WA_S12X)
 ggplot(accounts, aes(discount)) + geom_bar()
 
 # split the dataset to training/test
@@ -60,7 +61,7 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG + discount, data = accounts_train, family = binomial)
+logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG, data = accounts_train, family = binomial)
 
 # Evaluate the model
 library(caret)
