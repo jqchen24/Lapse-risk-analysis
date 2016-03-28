@@ -36,6 +36,11 @@ sort(tapply(accounts$churn, accounts$INVSOLFLG, mean), decreasing = T)
 sort(tapply(accounts$churn, accounts$mro_decile, mean), decreasing = T)
 sort(tapply(accounts$churn, accounts$contract_group, mean), decreasing = T)
 
+#######################################################
+# Feature engineering
+#######################################################
+accounts$discount = (accounts$WA_S12X - (accounts$SALES12X - accounts$FINDS12X))/accounts$WA_S12X
+
 # split the dataset to training/test
 library(caTools)
 set.seed(88)
@@ -54,13 +59,12 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + MTRSL12X + 
-                contract_group, data = accounts_train, family = binomial)
+logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG + SOW, data = accounts_train, family = binomial)
 
 # Evaluate the model
 library(caret)
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 # Note that both arguments in the confusionMatrix have to have the same values (either T/F or 0/1)
 confusionMatrix(accounts_test$churn == 1, predict_logReg >= 0.5)
-# accuracy is 84%
+# accuracy is 83.86%
 
