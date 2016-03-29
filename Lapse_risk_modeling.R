@@ -69,9 +69,10 @@ summary(logReg)
 library(caret)
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 # Note that both arguments in the confusionMatrix have to have the same values (either T/F or 0/1)
-confusionMatrix(accounts_test$churn == 1, predict_logReg >= 0.5)
+confusionMatrix(predict_logReg >= 0.5, accounts_test$churn==1)
 # accuracy is 83.87%
-## May prefer models with higher overall accuracy but also lower false negative (1 - sensitivity). 
+# Sensitivity is 88.55%
+## May prefer models with higher overall accuracy but also lower false negative, thus higher sensitivity.
 
 
 # Calculate AUC value and generate the ROC curve
