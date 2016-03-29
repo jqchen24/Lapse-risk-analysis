@@ -91,7 +91,7 @@ plot(perf)
 library(rpart)
 library(rpart.plot)
 CART <- rpart(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + 
-                contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 15)
+                contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 20)
 prp(CART)
 
 # Evaluate the model
