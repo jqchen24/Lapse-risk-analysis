@@ -5,6 +5,7 @@ accounts <- read.csv('accounts_churn_contact_flag.csv', stringsAsFactors = F)
 str(accounts)
 accounts$ ï..account <- NULL
 accounts$contract_group <- as.factor(accounts$contract_group)
+accounts$churn <- as.factor(accounts$churn)
 
 # Create some histograms
 library(ggplot2)
@@ -91,9 +92,8 @@ plot(perf)
 library(rpart)
 library(rpart.plot)
 CART <- rpart(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + 
-                contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 20)
+                contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 25)
 prp(CART)
-
 # Evaluate the model
 predictCART <- predict(CART, newdata = accounts_test, type = "class")
 confusionMatrix(predictCART, accounts_test$churn)
