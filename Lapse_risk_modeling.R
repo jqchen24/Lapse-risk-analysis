@@ -76,7 +76,7 @@ confusionMatrix(predict_logReg >= 0.5, accounts_test$churn==1)
 ## May prefer models with higher overall accuracy but also lower false negative, thus higher sensitivity.
 
 
-# Calculate AUC value and generate the ROC curve
+# Calculate AUC value and generate the ROC curve. AUC = 0.8889513
 library(ROCR)
 ROCRpred <- prediction(predict_logReg, accounts_test$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
