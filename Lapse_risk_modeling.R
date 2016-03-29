@@ -63,8 +63,7 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG + IVSLN12X + indseg1 
-              + mro_decile + contract_group, data = accounts_train, family = binomial)
+logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + IVSLN12X + indseg1 + mro_decile + contract_group, data = accounts_train, family = binomial)
 summary(logReg)
 # All variables are significant.
 
