@@ -61,12 +61,13 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG, data = accounts_train, family = binomial)
+logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + SALES12X + LINES12X + CONTRACT_FLAG, data = accounts_train, family = binomial)
+summary(logReg)
 
 # Evaluate the model
 library(caret)
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 # Note that both arguments in the confusionMatrix have to have the same values (either T/F or 0/1)
 confusionMatrix(accounts_test$churn == 1, predict_logReg >= 0.5)
-# accuracy is 83.86%
+# accuracy is 83.87%
 
