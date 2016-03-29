@@ -63,8 +63,8 @@ table(accounts_test$churn)
 ########################################################
 # Build a logistic regression model
 ########################################################
-logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG + IVSLN12X + indseg1 + mro_decile
-              , data = accounts_train, family = binomial)
+logReg <- glm(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X + CONTRACT_FLAG + IVSLN12X + indseg1 
+              + mro_decile + contract_group, data = accounts_train, family = binomial)
 summary(logReg)
 # All variables are significant.
 
@@ -73,12 +73,12 @@ library(caret)
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 # Note that both arguments in the confusionMatrix have to have the same values (either T/F or 0/1)
 confusionMatrix(predict_logReg >= 0.5, accounts_test$churn==1)
-# accuracy is 83.93%
-# Sensitivity is 91.05%
+# accuracy is 83.98%
+# Sensitivity is 91.09%
 ## May prefer models with higher overall accuracy but also lower false negative, thus higher sensitivity.
 
 
-# Calculate AUC value and generate the ROC curve. AUC = 0.8891643
+# Calculate AUC value and generate the ROC curve. AUC = 0.8893338
 library(ROCR)
 ROCRpred <- prediction(predict_logReg, accounts_test$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
