@@ -43,7 +43,6 @@ sort(tapply(accounts$churn, accounts$contract_group, mean), decreasing = T)
 library(dplyr)
 accounts <- mutate(accounts, discount = (WA_S12X - (SALES12X - FINDS12X))/WA_S12X)
 ggplot(accounts, aes(discount)) + geom_bar()
-# CSG
 accounts <- mutate(accounts, sellertype = CSG %/% 10000)
 accounts$sellertype <- as.factor(accounts$sellertype)
 
@@ -85,3 +84,25 @@ ROCRpred <- prediction(predict_logReg, accounts_test$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
+
+########################################################
+# Build a CART model
+########################################################
+library(rpart)
+library(rpart.plot)
+CART <- rpart(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + 
+                contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 5)
+prp(CART)
+
+# Evaluate the model
+predictCART <- predict(CART, newdata = accounts_test, type = "class")
+confusionMatrix(predictCART, accounts_test$churn)
+# accuracy is 83.74%
+# sensitivity is 93.09%
+library(ROCR)
+predictROC <- predict(CART, newdata = accounts_test)
+ROCRpred <- prediction(predictROC[,2], accounts_test$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+perf <- performance(ROCRpred, "tpr", "fpr")
+plot(perf)
+# AUC value = 0.8249959
