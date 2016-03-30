@@ -67,10 +67,12 @@ table(accounts_test$churn)
 ########################################################
 logReg <- glm(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + contract_group + log(mrospend) + sellertype, data = accounts_train, family = binomial)
 summary(logReg)
+
 # All variables are significant.
 
 # Evaluate the model
 library(caret)
+varImp(logReg)
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 # Note that both arguments in the confusionMatrix have to have the same values (either T/F or 0/1)
 ## Also note that positive argument is needed to specify which result is defined as true.
