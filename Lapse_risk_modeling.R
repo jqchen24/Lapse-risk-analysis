@@ -73,9 +73,10 @@ summary(logReg)
 library(caret)
 predict_logReg <- predict(logReg, newdata = accounts_test, type = 'response')
 # Note that both arguments in the confusionMatrix have to have the same values (either T/F or 0/1)
-confusionMatrix(predict_logReg >= 0.5, accounts_test$churn==1)
+## Also note that positive argument is needed to specify which result is defined as true.
+confusionMatrix(predict_logReg >= 0.5, accounts_test$churn==1, positive = "TRUE")
 # accuracy is 84.09%
-# Sensitivity is 92.60%
+# Sensitivity is 55.10%
 ## May prefer models with higher overall accuracy but also lower false negative, thus higher sensitivity.
 
 
@@ -97,9 +98,9 @@ CART <- rpart(churn ~ log(TRANS12X), data = accounts_train, method = "class", mi
 prp(CART)
 # Evaluate the model
 predictCART <- predict(CART, newdata = accounts_test, type = "class")
-confusionMatrix(predictCART, accounts_test$churn)
+confusionMatrix(predictCART, accounts_test$churn, positive = "1")
 # accuracy is 83.74%
-# sensitivity is 93.09%
+# sensitivity is 51.95%
 library(ROCR)
 predictROC <- predict(CART, newdata = accounts_test)
 ROCRpred <- prediction(predictROC[,2], accounts_test$churn)
