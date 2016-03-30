@@ -6,6 +6,7 @@ str(accounts)
 accounts$ ï..account <- NULL
 accounts$contract_group <- as.factor(accounts$contract_group)
 accounts$churn <- as.factor(accounts$churn)
+accounts$indseg1 <- as.factor(accounts$indseg1)
 
 # Create some histograms
 library(ggplot2)
@@ -151,3 +152,14 @@ print (paste("Average accuracy is", mean(accuracy)))
 print (paste("Average sensitivity is", mean(sensitivity)))
 print (paste("Average AUC value is", mean(AUC)))
 
+## Random forest model
+library(randomForest)
+set.seed(18)
+RF <- randomForest(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + contract_group + sellertype, data = accounts_train)
+RF_predict <- predict(RF, newdata = accounts_test)
+library(caret)
+confusionMatrix(RF_predict, accounts_test$churn, positive = "1")
+# Accuracy is 83.85%
+# Sensitivity is 59.28%.
+varImp(RF)
+varImpPlot(RF)
