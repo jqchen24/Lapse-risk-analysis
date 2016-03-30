@@ -95,7 +95,8 @@ plot(perf)
 library(rpart)
 library(rpart.plot)
 CART <- rpart(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + 
-                contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 25)
+                contract_group + log(mrospend) + sellertype, data = accounts_train, 
+              method = "class", control = rpart.control(minsplit = 5, cp = 0.005))
 CART <- rpart(churn ~ log(TRANS12X), data = accounts_train, method = "class", minbucket = 25)
 prp(CART)
 # Evaluate the model
@@ -103,6 +104,9 @@ predictCART <- predict(CART, newdata = accounts_test, type = "class")
 confusionMatrix(predictCART, accounts_test$churn, positive = "1")
 # accuracy is 83.74%
 # sensitivity is 51.95%
+## Note that the model that includes a lot of variables and the one that only includes log(TRANS12X)
+## have exactly the same metrics.
+
 library(ROCR)
 predictROC <- predict(CART, newdata = accounts_test)
 ROCRpred <- prediction(predictROC[,2], accounts_test$churn)
@@ -117,10 +121,11 @@ plot(perf)
 # 10 fold Cross validation
 ########################################################
 
-## Buid a logistic regression model
+## logistic regression model
 k <- 10
 list <- 1:k
 accounts$id <- sample(1:k, nrow(accounts), replace = T)
+table(accounts$id)/nrow(accounts)
 accuracy <- vector()
 sensitivity <- vector()
 AUC <- vector()
