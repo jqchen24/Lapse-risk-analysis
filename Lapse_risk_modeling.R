@@ -93,6 +93,7 @@ library(rpart)
 library(rpart.plot)
 CART <- rpart(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + 
                 contract_group + log(mrospend) + sellertype, data = accounts_train, method = "class", minbucket = 25)
+CART <- rpart(churn ~ log(TRANS12X), data = accounts_train, method = "class", minbucket = 25)
 prp(CART)
 # Evaluate the model
 predictCART <- predict(CART, newdata = accounts_test, type = "class")
@@ -106,3 +107,28 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 # AUC value = 0.8249959
+
+
+
+########################################################
+# 10 fold Cross validation
+########################################################
+
+## Buid a logistic regression model
+k <- 10
+list <- 1:k
+accounts$id <- sample(1:k, nrow(accounts), replace = T)
+for (i in 1:k) {
+  trainset <- subset(accounts, id %in% list[-i])
+  testset <- subset(accounts, id %in% c(i))
+  logReg <- glm(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + contract_group + log(mrospend) + sellertype, data = trainset, family = binomial)
+  predict_logReg <- predict(logReg, newdata = testset, type = 'response')
+  confusion_matrix <- table(testset$churn == 1, predict_logReg >= 0.5)
+  accuracy <- (confusion_matrix[[1]] + confusion_matrix[[4]])/nrow(testset)
+  sensitivity <- confusion_matrix[[4]]/(confusion_matrix[[2]] + confusion_matrix[[4]])
+  print(paste("training set churn % is", table(trainset$churn)/nrow(trainset)))
+  print(paste("test set churn % is", table(testset$churn)/nrow(testset)))
+  print (paste("accuracy is",accuracy))
+  print (paste("sensitivity is", sensitivity))
+  print (confusionMatrix(predict_logReg >= 0.5, testset$churn==1))
+}
