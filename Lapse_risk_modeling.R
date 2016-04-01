@@ -201,7 +201,7 @@ set.seed(80)
 # for each class. If the factor levels are not valid variable names, they are automatically
 # changed (e.g. "0" becomes "X0").
 levels(training$churn) <- c("No", "Yes")
-logReg_caret <- train(churn ~ CONTACTS + RECENCY + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
+logReg_caret <- train(churn ~ CONTACTS + RECENCY + TENURE + log(SALES12X) +log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
 logReg_caret
