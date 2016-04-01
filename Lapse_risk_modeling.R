@@ -8,6 +8,11 @@ accounts$contract_group <- as.factor(accounts$contract_group)
 accounts$churn <- as.factor(accounts$churn)
 accounts$indseg1 <- as.factor(accounts$indseg1)
 
+# Create some scatter plots
+library(ggplot2)
+ggplot(accounts, aes(x = TRANS12X, y = TENURE, color = churn)) + geom_point()
+ggplot(accounts, )
+
 # Create some histograms
 library(ggplot2)
 ggplot(accounts, aes(RECENCY)) + geom_bar()
@@ -189,6 +194,9 @@ set.seed(80)
 logReg_caret <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
+logReg_caret
+# Average accuracy on resampling datasets: 83.86%
+# Kappa = 52.48%
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
@@ -197,3 +205,9 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Accuracy = 83.75%
 ## Kappa = 52.02%
 ## Sensitivity = 59.25%
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+perf <- performance(ROCRpred, "tpr", "fpr")
+plot(perf)
+# AUC value = 0.8889467
