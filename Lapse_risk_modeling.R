@@ -201,23 +201,23 @@ set.seed(80)
 # for each class. If the factor levels are not valid variable names, they are automatically
 # changed (e.g. "0" becomes "X0").
 levels(training$churn) <- c("No", "Yes")
-logReg_caret <- train(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
+logReg_caret <- train(churn ~ CONTACTS + RECENCY + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
 logReg_caret
-# ROC = 0.8901243
-# Sensitivity = 0.9252568
+# ROC = 0.8908988
+# Sensitivity = 0.9254146
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
 pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
-## Accuracy = 83.94%
-## Kappa = 50.82%
-## Sensitivity = 54.76%
+## Accuracy = 84%
+## Kappa = 51.11%
+## Sensitivity = 55.17%
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
-# AUC value = 0.8904511
+# AUC value = 0.8913232
