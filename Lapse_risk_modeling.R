@@ -152,10 +152,11 @@ print (paste("Average accuracy is", mean(accuracy)))
 print (paste("Average sensitivity is", mean(sensitivity)))
 print (paste("Average AUC value is", mean(AUC)))
 
-## Random forest model
+## Random forest model using randomForest package
 library(randomForest)
 set.seed(18)
-RF <- randomForest(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + contract_group + sellertype, data = accounts_train)
+RF <- randomForest(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend 
+                   + contract_group + sellertype, data = accounts_train, do.trace = T)
 RF_predict <- predict(RF, newdata = accounts_test)
 library(caret)
 confusionMatrix(RF_predict, accounts_test$churn, positive = "1")
@@ -163,3 +164,21 @@ confusionMatrix(RF_predict, accounts_test$churn, positive = "1")
 # Sensitivity is 59.28%.
 varImp(RF)
 varImpPlot(RF)
+
+
+## Random forest model using caret package
+# create a stratified random sample of the data into training and test sets:
+library(caret)
+set.seed(998)
+inTraining <- createDataPartition(accounts$churn, p = 0.75, list = F)
+training <- accounts[inTraining,]
+testing <- accounts[-inTraining,]
+table(training$churn)/nrow(training)
+table(testing$churn)/nrow(testing)
+
+fitControl <- trainControl(method = "cv", number = 10)
+set.seed(80)
+RF <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
+              contract_group + sellertype, data = training, method = "rf", metric = "Kappa",
+            trControl = fitControl)
+## train only tune mtry for random forest.
