@@ -190,8 +190,10 @@ logReg_caret <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
 summary(logReg_caret)
-pred <- predict(logReg_caret, newdata = testing)
-confusionMatrix(pred == 1, testing$churn == 1, positive = "TRUE")
+# Note that for predict.train under caret, type argument can only be "raw" or "prob"
+# Also note that pred actually is a two column data frame.
+pred <- predict(logReg_caret, newdata = testing, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Accuracy = 83.75%
 ## Kappa = 52.02%
 ## Sensitivity = 59.25%
