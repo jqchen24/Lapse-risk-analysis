@@ -184,10 +184,14 @@ RF <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospen
 ## train only tune mtry for random forest.
 
 ## Logistic regression model using caret
-fitControl <- trainControl(method = "cv", number = 10)
+fitControl <- trainControl(method = "cv", number = 10, summaryFunction = twoClassSummary)
 set.seed(80)
 logReg_caret <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, data = training, method = "glm", 
-                      metric = "Kappa", trControl = fitControl)
-# Accuracy is 83.86%
-# Kappa is 52.4%
+                      trControl = fitControl, family = "binomial")
+summary(logReg_caret)
+pred <- predict(logReg_caret, newdata = testing)
+confusionMatrix(pred == 1, testing$churn == 1, positive = "TRUE")
+## Accuracy = 83.75%
+## Kappa = 52.02%
+## Sensitivity = 59.25%
