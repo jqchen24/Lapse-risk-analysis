@@ -182,3 +182,12 @@ RF <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospen
               contract_group + sellertype, data = training, method = "rf", metric = "Kappa",
             trControl = fitControl)
 ## train only tune mtry for random forest.
+
+## Logistic regression model using caret
+fitControl <- trainControl(method = "cv", number = 10)
+set.seed(80)
+logReg_caret <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
+                        contract_group + sellertype, data = training, method = "glm", 
+                      metric = "Kappa", trControl = fitControl)
+# Accuracy is 83.86%
+# Kappa is 52.4%
