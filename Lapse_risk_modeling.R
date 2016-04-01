@@ -220,4 +220,4 @@ ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
-# AUC value = 0.8889467
+# AUC value = 0.8904511
