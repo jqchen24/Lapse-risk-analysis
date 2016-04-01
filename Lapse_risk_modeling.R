@@ -11,7 +11,6 @@ accounts$indseg1 <- as.factor(accounts$indseg1)
 # Create some scatter plots
 library(ggplot2)
 ggplot(accounts, aes(x = TRANS12X, y = TENURE, color = churn)) + geom_point()
-ggplot(accounts, )
 
 # Create some histograms
 library(ggplot2)
@@ -188,23 +187,34 @@ RF <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospen
             trControl = fitControl)
 ## train only tune mtry for random forest.
 
+############################################################################
+############################################################################
 ## Logistic regression model using caret
-fitControl <- trainControl(method = "cv", number = 10, summaryFunction = twoClassSummary)
+# Note that to calculate the ROC curve, we need the model to predict the
+# class probabilities. The classProbs option will also do this. However, if we set
+# classProbs = TRUE, we won't be able to calculate accuracy later, AUC will be calculated
+# instead. 
+fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 3, summaryFunction = twoClassSummary,
+                           classProbs = TRUE)
 set.seed(80)
-logReg_caret <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
+# When class probabilities are requested, train puts them into a data frame with a column 
+# for each class. If the factor levels are not valid variable names, they are automatically
+# changed (e.g. "0" becomes "X0").
+levels(training$churn) <- c("No", "Yes")
+logReg_caret <- train(churn ~ CONTACTS + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
 logReg_caret
-# Average accuracy on resampling datasets: 83.86%
-# Kappa = 52.48%
+# ROC = 0.8901243
+# Sensitivity = 0.9252568
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
 pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
-## Accuracy = 83.75%
-## Kappa = 52.02%
-## Sensitivity = 59.25%
+## Accuracy = 83.94%
+## Kappa = 50.82%
+## Sensitivity = 54.76%
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
