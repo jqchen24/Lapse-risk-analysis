@@ -201,23 +201,26 @@ set.seed(80)
 # for each class. If the factor levels are not valid variable names, they are automatically
 # changed (e.g. "0" becomes "X0").
 levels(training$churn) <- c("No", "Yes")
-logReg_caret <- train(churn ~ CONTACTS + RECENCY + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
+logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
 logReg_caret
-# ROC = 0.8908988
-# Sensitivity = 0.9254146
+# ROC = 0.891041
+# Sensitivity = 0.9255765
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
 pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
+## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
 ## Accuracy = 84%
-## Kappa = 51.11%
-## Sensitivity = 55.17%
+## Kappa = 51.04%
+## Sensitivity = 55.06%
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
-# AUC value = 0.8913232
+# AUC value = 0.8913437
