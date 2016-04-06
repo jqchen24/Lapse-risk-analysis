@@ -218,36 +218,41 @@ fitControl <- trainControl(method = "repeatedcv",
                            repeats = 3, 
                            summaryFunction = twoClassSummary,
                            classProbs = TRUE)
-set.seed(80)
+
 # When class probabilities are requested, train puts them into a data frame with a column 
 # for each class. If the factor levels are not valid variable names, they are automatically
 # changed (e.g. "0" becomes "X0").
 levels(training$churn) <- c("No", "Yes")
-logReg_caret <- train(churn ~ CREDIT + CONTACTS + RECENCY + SHIP_S12 + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
+preProcValues <- preProcess(training, method = "scale")
+trainTransformed <- predict(preProcValues, training)
+testTransformed <- predict(preProcValues, testing)
+set.seed(80)
+logReg_caret <- train(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, 
-                      data = training, 
+                      data = trainTransformed, 
                       method = "glm", 
+                      metric = "ROC",
                       trControl = fitControl, 
-                      family = "binomial",
-                      do.trace = T)
+                      family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.890901
-# Sensitivity = 0.9254511
+# ROC = 0.888949
+# Sensitivity = 0.9100871
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
-pred <- predict(logReg_caret, newdata = testing, type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
+pred <- predict(logReg_caret, newdata = testTransformed, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testTransformed$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 # confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
-## Accuracy = 84%
-## Kappa = 51.12%
-## Sensitivity = 55.19%
+## Accuracy = 83.84%
+## Kappa = 52.18%
+## Sensitivity = 59.15%
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing$churn)
+ROCRpred <- prediction(pred[,2], testTransformed$churn)
 # ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.8892656
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
@@ -258,7 +263,7 @@ plot(perf, colorize=T,
      avg="threshold", 
      lwd=3)
 
-# AUC value = 0.8913338
+
 cutoffs <- data.frame(cut=perf@alpha.values[[1]], 
                       fpr=perf@x.values[[1]], 
                       tpr=perf@y.values[[1]])
