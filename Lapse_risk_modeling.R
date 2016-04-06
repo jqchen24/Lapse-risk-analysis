@@ -159,13 +159,19 @@ print (paste("Average AUC value is", mean(AUC)))
 ## Random forest model using randomForest package
 library(randomForest)
 set.seed(18)
-RF <- randomForest(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend 
-                   + contract_group + sellertype, data = accounts_train, do.trace = T)
+RF <- randomForest(data.frame(accounts_train$CONTACTS, accounts_train$RECENCY, accounts_train$TENURE, log(accounts_train$TRANS12X), 
+                              accounts_train$LINES12X, accounts_train$indseg1, accounts_train$mrospend, accounts_train$contract_group, 
+                              accounts_train$sellertype), accounts_train$churn, ntree = 1000, nodesize = 3, do.trace = T)
+# randomForest function doesn't recognize log(TRANS12X)
+RF <- randomForest(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + TRANS12X + LINES12X  +
+                     indseg1 + mrospend + contract_group + sellertype, 
+                   data = accounts_train, ntree = 1000, nodesize = 2, do.trace = T)
 RF_predict <- predict(RF, newdata = accounts_test)
 library(caret)
 confusionMatrix(RF_predict, accounts_test$churn, positive = "1")
-# Accuracy is 83.85%
-# Sensitivity is 59.28%.
+# Accuracy is 83.97%
+# Sensitivity is 58.95%.
+# Kappa = 0.524
 varImp(RF)
 varImpPlot(RF)
 
@@ -177,15 +183,21 @@ set.seed(998)
 inTraining <- createDataPartition(accounts$churn, p = 0.75, list = F)
 training <- accounts[inTraining,]
 testing <- accounts[-inTraining,]
+levels(training$churn) <- c("No", "Yes")
 table(training$churn)/nrow(training)
 table(testing$churn)/nrow(testing)
 
-fitControl <- trainControl(method = "cv", number = 10)
+fitControl <- trainControl(method = "cv", number = 10, classProbs = TRUE, 
+                           summaryFunction = twoClassSummary)
 set.seed(80)
-RF <- train(churn ~ CONTACTS + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
-              contract_group + sellertype, data = training, method = "rf", metric = "Kappa",
-            trControl = fitControl)
-## train only tune mtry for random forest.
+# Use non-formula form to speed up.
+# Never use the default nodesize -- 1. 
+RF <- train(data.frame(training$CONTACTS, training$RECENCY, training$TENURE, log(training$TRANS12X), 
+              training$LINES12X, training$indseg1, training$mrospend, training$contract_group, 
+              training$sellertype), training$churn, nodesize = 3, ntree = 500,
+            method = "rf", metric = "ROC", trControl = fitControl, do.trace = T)
+
+ggplot(RF)
 
 ############################################################################
 ############################################################################
@@ -205,6 +217,7 @@ logReg_caret <- train(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + log(TRANS12
                         contract_group + sellertype, data = training, method = "glm", 
                       trControl = fitControl, family = "binomial")
 logReg_caret
+varImp(logReg_caret)
 # ROC = 0.890901
 # Sensitivity = 0.9254511
 summary(logReg_caret)
