@@ -227,7 +227,7 @@ preProcValues <- preProcess(training, method = "scale")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
-logReg_caret <- train(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
+logReg_caret <- train(churn ~ CREDIT + CONTACTS + CNTR_T12 + RECENCY + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, 
                       data = training, 
                       method = "glm", 
