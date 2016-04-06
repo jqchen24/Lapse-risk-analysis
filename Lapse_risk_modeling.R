@@ -222,11 +222,11 @@ fitControl <- trainControl(method = "cv",
 # for each class. If the factor levels are not valid variable names, they are automatically
 # changed (e.g. "0" becomes "X0").
 levels(training$churn) <- c("No", "Yes")
-preProcValues <- preProcess(training, method = "scale")
+# preProcValues <- preProcess(training, method = "scale")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
-logReg_caret <- train(churn ~ CREDIT + CONTACTS + WCAL_T12 + RECENCY + TENURE + TRANS12X + LINES12X  + indseg1 + mrospend + 
+logReg_caret <- train(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, 
                       data = training, 
                       method = "glm", 
@@ -235,8 +235,8 @@ logReg_caret <- train(churn ~ CREDIT + CONTACTS + WCAL_T12 + RECENCY + TENURE + 
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.890901
-# Sensitivity = 0.9254511
+# ROC = 0.8908936
+# Sensitivity = 0.9254229
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
