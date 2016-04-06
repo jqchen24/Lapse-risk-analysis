@@ -202,6 +202,9 @@ RF <- train(training[c("CONTACTS", "RECENCY", "TENURE", "TRANS12X", "LINES12X", 
             trControl = fitControl,
             do.trace = T)
 ggplot(RF)
+plot(varImp(RF, scale = F))
+# Following only works for random forest object.
+varImpPlot(RF)
 
 ############################################################################
 ############################################################################
@@ -243,4 +246,17 @@ ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
+plot(perf, colorize=T)
+# Plot the cutoff points on the curve
+plot(perf, colorize=T, 
+     print.cutoffs.at=seq(0,1,by=0.1), 
+     text.adj=c(1.2,1.2), 
+     avg="threshold", 
+     lwd=3)
+
 # AUC value = 0.8913338
+cutoffs <- data.frame(cut=perf@alpha.values[[1]], 
+                      fpr=perf@x.values[[1]], 
+                      tpr=perf@y.values[[1]])
+cutoffs <- cutoffs[order(cutoffs$tpr, decreasing=TRUE),]
+head(subset(cutoffs, fpr < 0.2))
