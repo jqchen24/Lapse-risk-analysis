@@ -226,7 +226,7 @@ levels(training$churn) <- c("No", "Yes")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
-logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY  + RET_T12 + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
+logReg_caret <- train(churn ~ CREDIT + DISTANCE + CONTACTS + RECENCY  + GCOMN12X + RET_T12 + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
                         contract_group + sellertype, 
                       data = training, 
                       method = "glm", 
@@ -235,8 +235,8 @@ logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY  + RET_T12 
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8912224
-# Sensitivity = 0.9258033
+# ROC = 0.8914249
+# Sensitivity = 0.9257983
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
@@ -245,13 +245,13 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
 ## Accuracy = 84.02%
-## Kappa = 51.11%
-## Sensitivity = 55.13%
+## Kappa = 51.09%
+## Sensitivity = 55.07%
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8914962
+# AUC value = 0.8917629
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
