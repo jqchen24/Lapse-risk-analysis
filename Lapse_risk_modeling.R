@@ -56,6 +56,7 @@ accounts$sellertype <- as.factor(accounts$sellertype)
 accounts <- mutate(accounts, distance_far = (DISTANCE >= 5))
 accounts <- mutate(accounts, SOW = SALES12X/mrospend)
 # INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
+accounts <- mutate(accounts, trans_3month = TRANS01 + TRANS02 + TRANS03)
 
 # split the dataset to training/test
 library(caTools)
@@ -232,7 +233,7 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + TENURE + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X, 
+                        contract_group + sellertype + EPEDN12X + trans_3month, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -240,8 +241,8 @@ logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 +
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.893337
-# Sensitivity = 0.9242878
+# ROC = 0.8947192
+# Sensitivity = 0.9238376
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
@@ -249,14 +250,14 @@ pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
-## Accuracy = 84.25%
-## Kappa = 52.04%
-## Sensitivity = 0.5625
+## Accuracy = 0.8428
+## Kappa = 0.5231
+## Sensitivity = 0.5678
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8938789
+# AUC value = 0.8953571
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
