@@ -159,13 +159,13 @@ print (paste("Average AUC value is", mean(AUC)))
 ## Random forest model using randomForest package
 library(randomForest)
 set.seed(18)
-RF <- randomForest(data.frame(accounts_train$CONTACTS, accounts_train$RECENCY, accounts_train$TENURE, log(accounts_train$TRANS12X), 
-                              accounts_train$LINES12X, accounts_train$indseg1, accounts_train$mrospend, accounts_train$contract_group, 
-                              accounts_train$sellertype), accounts_train$churn, ntree = 1000, nodesize = 3, do.trace = T)
 # randomForest function doesn't recognize log(TRANS12X)
 RF <- randomForest(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + TRANS12X + LINES12X  +
                      indseg1 + mrospend + contract_group + sellertype, 
-                   data = accounts_train, ntree = 1000, nodesize = 2, do.trace = T)
+                   data = accounts_train, 
+                   ntree = 1000, 
+                   nodesize = 2, 
+                   do.trace = T)
 RF_predict <- predict(RF, newdata = accounts_test)
 library(caret)
 confusionMatrix(RF_predict, accounts_test$churn, positive = "1")
@@ -192,11 +192,15 @@ fitControl <- trainControl(method = "cv", number = 10, classProbs = TRUE,
 set.seed(80)
 # Use non-formula form to speed up.
 # Never use the default nodesize -- 1. 
-RF <- train(data.frame(training$CONTACTS, training$RECENCY, training$TENURE, log(training$TRANS12X), 
-              training$LINES12X, training$indseg1, training$mrospend, training$contract_group, 
-              training$sellertype), training$churn, nodesize = 3, ntree = 500,
-            method = "rf", metric = "ROC", trControl = fitControl, do.trace = T)
-
+RF <- train(training[c("CONTACTS", "RECENCY", "TENURE", "TRANS12X", "LINES12X", "indseg1",
+                       "mrospend", "contract_group", "sellertype")], 
+            training$churn,
+            nodesize = 2, 
+            ntree = 500, 
+            method = "rf", 
+            metric = "ROC", 
+            trControl = fitControl,
+            do.trace = T)
 ggplot(RF)
 
 ############################################################################
@@ -214,8 +218,11 @@ set.seed(80)
 # changed (e.g. "0" becomes "X0").
 levels(training$churn) <- c("No", "Yes")
 logReg_caret <- train(churn ~ CREDIT + CONTACTS + RECENCY + TENURE + log(TRANS12X) + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype, data = training, method = "glm", 
-                      trControl = fitControl, family = "binomial")
+                        contract_group + sellertype, 
+                      data = training, 
+                      method = "glm", 
+                      trControl = fitControl, 
+                      family = "binomial")
 logReg_caret
 varImp(logReg_caret)
 # ROC = 0.890901
