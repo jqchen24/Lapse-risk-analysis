@@ -232,8 +232,8 @@ levels(training$churn) <- c("No", "Yes")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
-logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + TENURE + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month, 
+logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -241,8 +241,8 @@ logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 +
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8947192
-# Sensitivity = 0.9238376
+# ROC = 0.8948067
+# Sensitivity = 0.9238726
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
@@ -250,14 +250,14 @@ pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
-## Accuracy = 0.8428
-## Kappa = 0.5231
-## Sensitivity = 0.5678
+## Accuracy = 0.8429
+## Kappa = 0.5233
+## Sensitivity = 0.5680
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8953571
+# AUC value = 0.8954651
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
