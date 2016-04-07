@@ -8,6 +8,7 @@ accounts$CONTRACT_FLAG <- as.factor(accounts$CONTRACT_FLAG)
 accounts$contract_group <- as.factor(accounts$contract_group)
 accounts$churn <- as.factor(accounts$churn)
 accounts$indseg1 <- as.factor(accounts$indseg1)
+accounts$Corp_Maj_Flag <- as.factor(accounts$Corp_Maj_Flag)
 
 # Create some scatter plots
 library(ggplot2)
@@ -235,7 +236,7 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -245,7 +246,7 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
 # Accuracy and ROC the same time?
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
@@ -253,10 +254,10 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8950619
-# Sensitivity = 0.9236975
-# Accuracy = 0.844515
-# Kappa = 0.5292079
+# ROC = 0.8950886
+# Sensitivity = 0.9236525
+# Accuracy = 0.8444879
+# Kappa = 0.5291592
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -265,14 +266,14 @@ pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
-## Accuracy = 0.8432
-## Kappa = 0.5244
-## Sensitivity = 0.5692
+## Accuracy = 0.8433
+## Kappa = 0.5246
+## Sensitivity = 0.5694
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8956891
+# AUC value = 0.8957531
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
