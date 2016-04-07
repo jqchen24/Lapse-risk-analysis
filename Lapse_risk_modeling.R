@@ -165,6 +165,12 @@ print (paste("Average accuracy is", mean(accuracy)))
 print (paste("Average sensitivity is", mean(sensitivity)))
 print (paste("Average AUC value is", mean(AUC)))
 
+
+
+########################################################
+# CARET training
+########################################################
+
 ## Random forest model using randomForest package
 library(randomForest)
 set.seed(18)
@@ -254,10 +260,10 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8950886
-# Sensitivity = 0.9236525
-# Accuracy = 0.8444879
-# Kappa = 0.5291592
+# ROC = 0.8946391
+# Sensitivity = 0.9224594
+# Accuracy = 0.8436581
+# Kappa = 0.5272398
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -266,14 +272,14 @@ pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
-## Accuracy = 0.8433
-## Kappa = 0.5246
-## Sensitivity = 0.5694
+## Accuracy = 0.844
+## Kappa = 0.5287
+## Sensitivity = 0.5760
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8957531
+# AUC value = 0.8952644
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
