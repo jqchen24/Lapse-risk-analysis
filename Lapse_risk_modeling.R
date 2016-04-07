@@ -226,11 +226,11 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
-            nodesize = 2, 
+            nodesize = 1, 
             ntree = 500, 
             method = "rf", 
             metric = "ROC", 
-            trControl = trainControl(method = "cv", number = 2, classProbs = TRUE, 
+            trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
                                      summaryFunction = twoClassSummary),
             do.trace = T)
 RF
@@ -239,19 +239,21 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
-            nodesize = 2, 
+            nodesize = 1, 
             ntree = 500, 
             method = "rf", 
             metric = "Accuracy",
-            trControl = trainControl(method = "cv", number = 2),
+            trControl = trainControl(method = "cv", number = 5),
             do.trace = T)
 RF
 ggplot(RF)
 ## Evaluate the model on CV data.
-# Accuracy = 0.8437161
-# Kappa = 0.5273747
-# ROC = 0.8947089
-# Sens = 0.9099365
+# ROC = 0.8943680 (requires class probabilities)
+# Sens = 0.9102540
+# Accuracy = 0.8442228 (random forest votes for the binary outcome, default cutoff
+# is 1/k (k is the # of classes), in our case, cutoff = 0.5.
+# But for a single tree, what is the cut off??
+# Kappa = 0.5441605
 
 plot(varImp(RF, scale = F))
 # Following only works for random forest object.
@@ -264,13 +266,18 @@ pred <- predict(RF, newdata = testing[c("RECENCY", "TENURE", "RET_T12", "TRANS12
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8445
-# Kappa: 0.546
-# Sens: 0.6229
+# Accuracy: 0.8444
+# Kappa: 0.5466
+# Sens: 0.6258
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC value = 0.8957088
+plot(perf, colorize=T, 
+     print.cutoffs.at=seq(0,1,by=0.1), 
+     text.adj=c(1.2,1.2), 
+     avg="threshold", 
+     lwd=3)
 
 ############################################################################
 ############################################################################
