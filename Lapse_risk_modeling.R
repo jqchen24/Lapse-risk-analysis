@@ -199,16 +199,21 @@ inTraining <- createDataPartition(accounts$churn, p = 0.2, list = F)
 training <- accounts[inTraining,]
 testing <- accounts[-inTraining,]
 levels(training$churn) <- c("No", "Yes")
+#### Need to make sure all the categorical predictors have the same levels between 
+#### training and testing data, otherwise predict function will throw out errors.
+
 table(training$churn)/nrow(training)
 table(testing$churn)/nrow(testing)
+
 
 fitControl <- trainControl(method = "cv", number = 10, classProbs = TRUE, 
                            summaryFunction = twoClassSummary)
 set.seed(80)
 # Use non-formula form to speed up.
 # Never use the default nodesize -- 1. 
-RF <- train(training[c("CONTACTS", "RECENCY", "TENURE", "TRANS12X", "LINES12X", "indseg1",
-                       "mrospend", "contract_group", "sellertype")], 
+RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat"
+                       "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             nodesize = 2, 
             ntree = 500, 
@@ -216,10 +221,16 @@ RF <- train(training[c("CONTACTS", "RECENCY", "TENURE", "TRANS12X", "LINES12X", 
             metric = "ROC", 
             trControl = fitControl,
             do.trace = T)
+RF
 ggplot(RF)
 plot(varImp(RF, scale = F))
 # Following only works for random forest object.
 varImpPlot(RF)
+pred <- predict(RF, newdata = training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                         "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat"
+                                         "Customer_Size", "Corp_Maj_Flag", "SOW")], type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
+
 
 ############################################################################
 ############################################################################
