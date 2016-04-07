@@ -233,7 +233,7 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + INVSOLFLG, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
