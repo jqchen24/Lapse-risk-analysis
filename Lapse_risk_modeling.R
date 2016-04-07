@@ -216,43 +216,65 @@ levels(testing$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
 table(training$churn)/nrow(training)
 table(testing$churn)/nrow(testing)
 
-fitControl <- trainControl(method = "cv", number = 2, classProbs = TRUE, 
-                           summaryFunction = twoClassSummary)
-set.seed(80)
+
 # Use non-formula form to speed up.
 # Never use the default nodesize -- 1. 
+set.seed(80)
+## The first model is used to calculate AUC value and the 2nd one calculates accuracy and 
+## Kappa. 
 RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat"
+                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             nodesize = 2, 
             ntree = 500, 
             method = "rf", 
             metric = "ROC", 
-            trControl = fitControl,
+            trControl = trainControl(method = "cv", number = 2, classProbs = TRUE, 
+                                     summaryFunction = twoClassSummary),
+            do.trace = T)
+RF
+set.seed(80)
+RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
+                       "Customer_Size", "Corp_Maj_Flag", "SOW")], 
+            training$churn,
+            nodesize = 2, 
+            ntree = 500, 
+            method = "rf", 
+            metric = "Accuracy",
+            trControl = trainControl(method = "cv", number = 2),
             do.trace = T)
 RF
 ggplot(RF)
+## Evaluate the model on CV data.
+# Accuracy = 0.8437161
+# Kappa = 0.5273747
+# ROC = 0.8947089
+# Sens = 0.9099365
+
 plot(varImp(RF, scale = F))
 # Following only works for random forest object.
 varImpPlot(RF)
-pred <- predict(RF, newdata = training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                         "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat"
-                                         "Customer_Size", "Corp_Maj_Flag", "SOW")], type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
-
+## Only include the predictors from the model, otherwise we have to make sure all
+## categorical variables have the same levels between training and testing.
+pred <- predict(RF, newdata = testing[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                         "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
+                                         "Customer_Size", "Corp_Maj_Flag", "SOW")], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.8445
+# Kappa: 0.546
+# Sens: 0.6229
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.8957088
 
 ############################################################################
 ############################################################################
 ## Logistic regression model using caret
-# Note that to calculate the ROC curve, we need the model to predict the
-# class probabilities. The classProbs option will also do this. However, if we set
-# classProbs = TRUE, we won't be able to calculate accuracy later, AUC will be calculated
-# instead. 
-fitControl <- trainControl(method = "cv", 
-                           number = 10, 
-                           summaryFunction = twoClassSummary,
-                           classProbs = TRUE)
 
 # When class probabilities are requested, train puts them into a data frame with a column 
 # for each class. If the factor levels are not valid variable names, they are automatically
@@ -262,12 +284,19 @@ levels(training$churn) <- c("No", "Yes")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
+# Note that to calculate the ROC curve, we need the model to predict the
+# class probabilities. The classProbs option will also do this. However, if we set
+# classProbs = TRUE, we won't be able to calculate accuracy later, AUC will be calculated
+# instead. 
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                         contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
-                      trControl = fitControl, 
+                      trControl = trainControl(method = "cv", 
+                                               number = 10, 
+                                               summaryFunction = twoClassSummary,
+                                               classProbs = TRUE), 
                       family = binomial)
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
 # Accuracy and ROC the same time?
