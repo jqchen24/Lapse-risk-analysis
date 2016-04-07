@@ -233,7 +233,7 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -241,7 +241,7 @@ logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 +
                       family = binomial)
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
@@ -249,10 +249,10 @@ logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 +
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8948067
-# Sensitivity = 0.9238726
-# Accuracy = 0.844078
-# Kappa = 0.5273291
+# ROC = 0.894819
+# Sensitivity = 0.9239876
+# Accuracy = 0.8441902
+# Kappa = 0.5276181
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
