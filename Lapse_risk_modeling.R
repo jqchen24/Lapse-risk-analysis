@@ -232,8 +232,8 @@ levels(training$churn) <- c("No", "Yes")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
-logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + multisite, 
+logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + mrospend + 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -241,8 +241,9 @@ logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 +
                       family = binomial)
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
 # Accuracy and ROC the same time?
-logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + multisite, 
+set.seed(80)
+logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + mrospend + 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
