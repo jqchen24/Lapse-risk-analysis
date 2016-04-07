@@ -201,12 +201,22 @@ testing <- accounts[-inTraining,]
 levels(training$churn) <- c("No", "Yes")
 #### Need to make sure all the categorical predictors have the same levels between 
 #### training and testing data, otherwise predict function will throw out errors.
-
+levels(training$indseg1) <- levels(accounts$indseg1)
+levels(testing$indseg1) <- levels(accounts$indseg1)
+levels(training$contract_group) <- levels(accounts$contract_group)
+levels(testing$contract_group) <- levels(accounts$contract_group)
+levels(training$sellertype) <- levels(accounts$sellertype)
+levels(testing$sellertype) <- levels(accounts$sellertype)
+levels(training$dunsstat) <- levels(accounts$dunsstat)
+levels(testing$dunsstat) <- levels(accounts$dunsstat)
+levels(training$Customer_Size) <- levels(accounts$Customer_Size)
+levels(testing$Customer_Size) <- levels(accounts$Customer_Size)
+levels(training$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
+levels(testing$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
 table(training$churn)/nrow(training)
 table(testing$churn)/nrow(testing)
 
-
-fitControl <- trainControl(method = "cv", number = 10, classProbs = TRUE, 
+fitControl <- trainControl(method = "cv", number = 2, classProbs = TRUE, 
                            summaryFunction = twoClassSummary)
 set.seed(80)
 # Use non-formula form to speed up.
