@@ -189,7 +189,7 @@ varImpPlot(RF)
 # create a stratified random sample of the data into training and test sets:
 library(caret)
 set.seed(998)
-inTraining <- createDataPartition(accounts$churn, p = 0.75, list = F)
+inTraining <- createDataPartition(accounts$churn, p = 0.2, list = F)
 training <- accounts[inTraining,]
 testing <- accounts[-inTraining,]
 levels(training$churn) <- c("No", "Yes")
