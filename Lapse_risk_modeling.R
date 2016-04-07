@@ -233,16 +233,27 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + INVSOLFLG, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
                       trControl = fitControl, 
                       family = binomial)
+# Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
+logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X, 
+                      data = training, 
+                      method = "glm", 
+                      metric = "Accuracy",
+                      trControl = trainControl(method = "cv", number = 10),
+                      family = binomial)
 logReg_caret
 varImp(logReg_caret)
 # ROC = 0.8948067
 # Sensitivity = 0.9238726
+# Accuracy = 0.844078
+# Kappa = 0.5273291
+
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
 # Also note that pred actually is a two column data frame.
