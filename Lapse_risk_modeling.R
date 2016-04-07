@@ -166,11 +166,6 @@ print (paste("Average sensitivity is", mean(sensitivity)))
 print (paste("Average AUC value is", mean(AUC)))
 
 
-
-########################################################
-# CARET training
-########################################################
-
 ## Random forest model using randomForest package
 library(randomForest)
 set.seed(18)
@@ -190,6 +185,11 @@ confusionMatrix(RF_predict, accounts_test$churn, positive = "1")
 varImp(RF)
 varImpPlot(RF)
 
+
+
+########################################################
+# CARET training
+########################################################
 
 ## Random forest model using caret package
 # create a stratified random sample of the data into training and test sets:
@@ -241,7 +241,7 @@ levels(training$churn) <- c("No", "Yes")
 # trainTransformed <- predict(preProcValues, training)
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
-logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                         contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
@@ -251,7 +251,7 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
 # Accuracy and ROC the same time?
 set.seed(80)
-logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                         contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
@@ -260,10 +260,10 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8946391
-# Sensitivity = 0.9224594
-# Accuracy = 0.8436581
-# Kappa = 0.5272398
+# ROC = 0.8946597
+# Sensitivity = 0.9225344
+# Accuracy = 0.8437161
+# Kappa = 0.5273747
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -272,14 +272,14 @@ pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
-## Accuracy = 0.844
-## Kappa = 0.5287
-## Sensitivity = 0.5760
+## Accuracy = 0.8439
+## Kappa = 0.5282
+## Sensitivity = 0.5755
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8952644
+# AUC value = 0.8952406
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
