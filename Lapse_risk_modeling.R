@@ -233,15 +233,16 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + dunssub, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
                       trControl = fitControl, 
                       family = binomial)
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
+# Accuracy and ROC the same time?
 logReg_caret <- train(churn ~ DISTANCE + CREDIT + CONTACTS + RECENCY + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + TENURE + LINES12X  + indseg1 + mrospend + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + dunssub, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
