@@ -50,6 +50,7 @@ sort(tapply(accounts$churn, accounts$distance_far, mean), decreasing = T)
 # Feature engineering
 #######################################################
 library(dplyr)
+# WA_S12X ranges from -206700 to large number, hard to get any sense out of it.
 accounts <- mutate(accounts, discount = (WA_S12X - (SALES12X - FINDS12X))/WA_S12X)
 ggplot(accounts, aes(discount)) + geom_bar()
 accounts <- mutate(accounts, sellertype = CSG %/% 10000)
@@ -234,7 +235,7 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW, 
+                        contract_group + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -244,7 +245,7 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
 # Accuracy and ROC the same time?
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW, 
+                        contract_group + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
