@@ -233,7 +233,7 @@ levels(training$churn) <- c("No", "Yes")
 # testTransformed <- predict(preProcValues, testing)
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + mro_decile, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -243,7 +243,7 @@ logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 +
 # Accuracy and ROC the same time?
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + CONTACTS + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + mro_decile, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
