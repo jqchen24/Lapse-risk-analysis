@@ -236,6 +236,24 @@ table(testing$churn)/nrow(testing)
 #             do.trace = T)
 # RF
 set.seed(80)
+## Tune mtry
+RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                                            "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                                            "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+                  training[is.na(training$DISTANCE) != T,]$churn,
+                  # nodesize = 1, 
+                  ntree = 500,
+                  method = "rf", 
+                  metric = "ROC",
+                  trControl = trainControl(method = "cv", 
+                                           number = 5,
+                                           summaryFunction = multiClassSummary,
+                                           classProbs = TRUE),
+                  tuneGrid = expand.grid(mtry = c(2, 3, 4)),
+                  do.trace = T) 
+RF_tuning
+ggplot(RF_tuning)
+## Use mtry = 2.
 RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
                        "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
@@ -261,8 +279,7 @@ ggplot(RF)
 # Kappa = 0.5446695 
 
 plot(varImp(RF, scale = F))
-# Following only works for random forest object.
-varImpPlot(RF)
+ggplot(RF)
 ## Only include the predictors from the model, otherwise we have to make sure all
 ## categorical variables have the same levels between training and testing.
 pred <- predict(RF, newdata = testing[is.na(testing$DISTANCE) != T, c("DISTANCE","RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
@@ -311,7 +328,6 @@ set.seed(80)
 #                                                classProbs = TRUE), 
 #                       family = binomial)
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
-# Accuracy and ROC the same time?
 ## set summaryFunction to be multiClassSummary and set classProbs = T, metric = "ROC"
 ## This way one can see both ROC and accuracy, Kappa and sensitivity.
 set.seed(80)
