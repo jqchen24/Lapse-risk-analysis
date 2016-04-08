@@ -219,23 +219,22 @@ table(testing$churn)/nrow(testing)
 
 # Use non-formula form to speed up.
 # Never use the default nodesize -- 1. 
-set.seed(80)
 ## The first model is used to calculate AUC value and the 2nd one calculates accuracy and 
 ## Kappa. 
 # Try ntree = 400, 300, 1000. Can't tune via tuneGrid. have to manually try.
-RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                       "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
-            training[is.na(training$DISTANCE)!=T,]$churn,
-            # nodesize = 1, 
-            ntree = 1000,
-            method = "rf", 
-            metric = "ROC", 
-            trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
-                                     summaryFunction = twoClassSummary),
-            tuneGrid = expand.grid(mtry = 2),
-            do.trace = T)
-RF
+# RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+#                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+#                        "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+#             training[is.na(training$DISTANCE)!=T,]$churn,
+#             # nodesize = 1, 
+#             ntree = 1000,
+#             method = "rf", 
+#             metric = "ROC", 
+#             trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
+#                                      summaryFunction = twoClassSummary),
+#             tuneGrid = expand.grid(mtry = 2),
+#             do.trace = T)
+# RF
 set.seed(80)
 RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
@@ -244,8 +243,11 @@ RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TE
             # nodesize = 1, 
             ntree = 1000,
             method = "rf", 
-            metric = "Accuracy",
-            trControl = trainControl(method = "cv", number = 5),
+            metric = "ROC",
+            trControl = trainControl(method = "cv", 
+                                     number = 5,
+                                     summaryFunction = multiClassSummary,
+                                     classProbs = TRUE),
             tuneGrid = expand.grid(mtry = 2),
             do.trace = T)
 RF
@@ -298,25 +300,30 @@ set.seed(80)
 # class probabilities. The classProbs option will also do this. However, if we set
 # classProbs = TRUE, we won't be able to calculate accuracy later, AUC will be calculated
 # instead. 
+# logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+#                         contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+#                       data = training, 
+#                       method = "glm", 
+#                       metric = "ROC",
+#                       trControl = trainControl(method = "cv", 
+#                                                number = 10, 
+#                                                summaryFunction = twoClassSummary,
+#                                                classProbs = TRUE), 
+#                       family = binomial)
+# Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
+# Accuracy and ROC the same time?
+## set summaryFunction to be multiClassSummary and set classProbs = T, metric = "ROC"
+## This way one can see both ROC and accuracy, Kappa and sensitivity.
+set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                         contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
                       trControl = trainControl(method = "cv", 
-                                               number = 10, 
-                                               summaryFunction = twoClassSummary,
-                                               classProbs = TRUE), 
-                      family = binomial)
-# Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
-# Accuracy and ROC the same time?
-set.seed(80)
-logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
-                      data = training, 
-                      method = "glm", 
-                      metric = "Accuracy",
-                      trControl = trainControl(method = "cv", number = 10),
+                                               number = 10,
+                                               summaryFunction = multiClassSummary,
+                                               classProbs = TRUE),
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
