@@ -320,10 +320,10 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8946597
-# Sensitivity = 0.9225344
-# Accuracy = 0.8437161
-# Kappa = 0.5273747
+# ROC = 0.8458944
+# Sensitivity = 0.9240348
+# Accuracy = 0.8375667
+# Kappa = 0.4977174
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -331,15 +331,15 @@ summary(logReg_caret)
 pred <- predict(logReg_caret, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
-confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == 1, positive = "TRUE")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
 ## Accuracy = 0.8439
 ## Kappa = 0.5282
-## Sensitivity = 0.5755
+## Sensitivity = 0.5754
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8952406
+# AUC value = 0.895253
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
