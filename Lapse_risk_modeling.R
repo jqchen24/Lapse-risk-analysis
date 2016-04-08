@@ -222,18 +222,19 @@ table(testing$churn)/nrow(testing)
 set.seed(80)
 ## The first model is used to calculate AUC value and the 2nd one calculates accuracy and 
 ## Kappa. 
-# Try ntree = 400, 300, 1000
+# Try ntree = 400, 300, 1000. Can't tune via tuneGrid. have to manually try.
 RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             nodesize = 1, 
-            ntree = 500, 
+            ntree = 300,
+            model = F,
             method = "rf", 
             metric = "ROC", 
             trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
                                      summaryFunction = twoClassSummary),
-            tuneGrid = expand.grid(mtry = c(12, 13, 14, 15)),
+            tuneGrid = data.frame(mtry = 2),
             do.trace = T)
 RF
 set.seed(80)
@@ -242,11 +243,12 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             nodesize = 1, 
-            ntree = 500, 
+            ntree = 300,
+            mtry = 2,
+            model = F,
             method = "rf", 
             metric = "Accuracy",
             trControl = trainControl(method = "cv", number = 5),
-            tuneGrid = expand.grid(mtry = c(6, 7, 8)),
             do.trace = T)
 RF
 ggplot(RF)
