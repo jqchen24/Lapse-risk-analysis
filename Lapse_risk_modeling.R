@@ -232,7 +232,7 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
             metric = "ROC", 
             trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
                                      summaryFunction = twoClassSummary),
-            tuneGrid = expand.grid(mtry = c(3, 4, 5)),
+            tuneGrid = expand.grid(mtry = c(6, 7, 8)),
             do.trace = T)
 RF
 set.seed(80)
@@ -245,7 +245,7 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
             method = "rf", 
             metric = "Accuracy",
             trControl = trainControl(method = "cv", number = 5),
-            tuneGrid = expand.grid(mtry = c(3, 4, 5)),
+            tuneGrid = expand.grid(mtry = c(6, 7, 8)),
             do.trace = T)
 RF
 ggplot(RF)
