@@ -277,8 +277,9 @@ ggplot(RF)
 # is 1/k (k is the # of classes), in our case, cutoff = 0.5.
 # But for a single tree, what is the cut off??
 # Kappa = 0.5446695 
-
+varImp(RF, scale = F)
 plot(varImp(RF, scale = F))
+plot(varImp(RF, scale = T))
 ggplot(RF)
 ## Only include the predictors from the model, otherwise we have to make sure all
 ## categorical variables have the same levels between training and testing.
@@ -379,3 +380,22 @@ cutoffs <- data.frame(cut=perf@alpha.values[[1]],
                       tpr=perf@y.values[[1]])
 cutoffs <- cutoffs[order(cutoffs$tpr, decreasing=TRUE),]
 head(subset(cutoffs, fpr < 0.2))
+
+
+############################################################################
+############################################################################
+## Naive Bayes using caret
+set.seed(80)
+NB <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                                      "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                                      "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+            training[is.na(training$DISTANCE) != T,]$churn,
+            method = "nb", 
+            metric = "ROC",
+            trControl = trainControl(method = "cv", 
+                                     number = 5,
+                                     summaryFunction = multiClassSummary,
+                                     classProbs = TRUE),
+            do.trace = T)
+NB
+## Poor performance.
