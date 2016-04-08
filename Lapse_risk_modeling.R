@@ -224,11 +224,11 @@ set.seed(80)
 ## Kappa. 
 # Try ntree = 400, 300, 1000. Can't tune via tuneGrid. have to manually try.
 RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
+                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             # nodesize = 1, 
-            ntree = 800,
+            ntree = 1000,
             method = "rf", 
             metric = "ROC", 
             trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
@@ -238,11 +238,11 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
 RF
 set.seed(80)
 RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
+                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             # nodesize = 1, 
-            ntree = 800,
+            ntree = 1000,
             method = "rf", 
             metric = "Accuracy",
             trControl = trainControl(method = "cv", number = 5),
@@ -251,12 +251,12 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
 RF
 ggplot(RF)
 ## Evaluate the model on CV data.
-# ROC = 0.8946163 (requires class probabilities)
-# Sens = 0.9101233
-# Accuracy = 0.8443671 (random forest votes for the binary outcome, default cutoff
+# ROC = 0.8946163 (requires class probabilities) 0.8945617
+# Sens = 0.9101233 0.9105342
+# Accuracy = 0.8443671  0.8444393 (random forest votes for the binary outcome, default cutoff
 # is 1/k (k is the # of classes), in our case, cutoff = 0.5.
 # But for a single tree, what is the cut off??
-# Kappa = 0.5448326
+# Kappa = 0.5448326 0.5446375
 
 plot(varImp(RF, scale = F))
 # Following only works for random forest object.
@@ -269,9 +269,9 @@ pred <- predict(RF, newdata = testing[c("RECENCY", "TENURE", "RET_T12", "TRANS12
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8447
-# Kappa: 0.5468
-# Sens: 0.6240
+# Accuracy: 0.8447 
+# Kappa: 0.5468 0.5464
+# Sens: 0.6240 0.6228
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
