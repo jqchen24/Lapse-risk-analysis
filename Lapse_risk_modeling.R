@@ -299,7 +299,7 @@ set.seed(80)
 # classProbs = TRUE, we won't be able to calculate accuracy later, AUC will be calculated
 # instead. 
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -312,7 +312,7 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
 # Accuracy and ROC the same time?
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + dunsstat + Customer_Size + SOW + Corp_Maj_Flag, 
+                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "Accuracy",
@@ -320,10 +320,10 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8458944
-# Sensitivity = 0.9240348
-# Accuracy = 0.8375667
-# Kappa = 0.4977174
+# ROC = 0.8861113
+# Sensitivity = 0.90498
+# Accuracy = 0.836885
+# Kappa = 0.5236892
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -333,13 +333,13 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
 ## Accuracy = 0.8439
-## Kappa = 0.5282
-## Sensitivity = 0.5754
+## Kappa = 0.5281
+## Sensitivity = 0.5755
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.895253
+# AUC value = 0.8953035
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
