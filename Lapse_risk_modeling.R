@@ -223,10 +223,10 @@ set.seed(80)
 ## The first model is used to calculate AUC value and the 2nd one calculates accuracy and 
 ## Kappa. 
 # Try ntree = 400, 300, 1000. Can't tune via tuneGrid. have to manually try.
-RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                       "Customer_Size", "Corp_Maj_Flag", "SOW")], 
-            training$churn,
+                       "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+            training[is.na(training$DISTANCE)!=T,]$churn,
             # nodesize = 1, 
             ntree = 1000,
             method = "rf", 
@@ -237,10 +237,10 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
             do.trace = T)
 RF
 set.seed(80)
-RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                       "Customer_Size", "Corp_Maj_Flag", "SOW")], 
-            training$churn,
+                       "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+            training[is.na(training$DISTANCE) != T,]$churn,
             # nodesize = 1, 
             ntree = 1000,
             method = "rf", 
@@ -251,31 +251,31 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
 RF
 ggplot(RF)
 ## Evaluate the model on CV data.
-# ROC = 0.8946163 (requires class probabilities) 0.8945617
-# Sens = 0.9101233 0.9105342
-# Accuracy = 0.8443671  0.8444393 (random forest votes for the binary outcome, default cutoff
+# ROC = 0.8952198 (requires class probabilities) 
+# Sens = 0.9113179 
+# Accuracy = 0.844833   (random forest votes for the binary outcome, default cutoff
 # is 1/k (k is the # of classes), in our case, cutoff = 0.5.
 # But for a single tree, what is the cut off??
-# Kappa = 0.5448326 0.5446375
+# Kappa = 0.5446695 
 
 plot(varImp(RF, scale = F))
 # Following only works for random forest object.
 varImpPlot(RF)
 ## Only include the predictors from the model, otherwise we have to make sure all
 ## categorical variables have the same levels between training and testing.
-pred <- predict(RF, newdata = testing[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                         "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X", "dunsstat",
-                                         "Customer_Size", "Corp_Maj_Flag", "SOW")], 
+pred <- predict(RF, newdata = testing[is.na(testing$DISTANCE) != T, c("DISTANCE","RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                         "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                         "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
                 type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8447 
-# Kappa: 0.5468 0.5464
-# Sens: 0.6240 0.6228
+# Accuracy: 0.8448 
+# Kappa: 0.5456 
+# Sens: 0.6204 
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing$churn)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8958335
+# AUC value = 0.8963878
 plot(perf, colorize=T, 
      print.cutoffs.at=seq(0,1,by=0.1), 
      text.adj=c(1.2,1.2), 
