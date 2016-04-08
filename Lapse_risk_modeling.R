@@ -228,7 +228,7 @@ RF <- train(training[c("RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "
                        "Customer_Size", "Corp_Maj_Flag", "SOW")], 
             training$churn,
             nodesize = 1, 
-            ntree = 1000,
+            ntree = 1500,
             method = "rf", 
             metric = "ROC", 
             trControl = trainControl(method = "cv", number = 5, classProbs = TRUE, 
