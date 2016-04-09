@@ -9,6 +9,8 @@ accounts$contract_group <- as.factor(accounts$contract_group)
 accounts$churn <- as.factor(accounts$churn)
 accounts$indseg1 <- as.factor(accounts$indseg1)
 accounts$Corp_Maj_Flag <- as.factor(accounts$Corp_Maj_Flag)
+accounts$dunsstat <- as.factor(accounts$dunsstat)
+accounts$Customer_Size <- as.factor(accounts$Customer_Size)
 
 # Create some scatter plots
 library(ggplot2)
@@ -199,6 +201,7 @@ inTraining <- createDataPartition(accounts$churn, p = 0.2, list = F)
 training <- accounts[inTraining,]
 testing <- accounts[-inTraining,]
 levels(training$churn) <- c("No", "Yes")
+levels(testing$churn) <- c("No", "Yes")
 #### Need to make sure all the categorical predictors have the same levels between 
 #### training and testing data, otherwise predict function will throw out errors.
 levels(training$indseg1) <- levels(accounts$indseg1)
@@ -254,6 +257,7 @@ RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENC
 RF_tuning
 ggplot(RF_tuning)
 ## Use mtry = 2.
+set.seed(80)
 RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
                        "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
@@ -399,3 +403,19 @@ NB <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TE
             do.trace = T)
 NB
 ## Poor performance.
+
+############################################################################
+############################################################################
+## K Nearesting Neighbors
+## delete categorical variables for now.
+set.seed(80)
+KNN <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", 
+                                                      "EPEDN12X", "trans_3month", "EBUN12X", "SOW")], 
+            training[is.na(training$DISTANCE) != T,]$churn,
+            method = "knn", 
+            metric = "ROC",
+            trControl = trainControl(method = "cv", 
+                                     number = 5,
+                                     summaryFunction = multiClassSummary,
+                                     classProbs = TRUE),
+            tuneGrid = expand.grid(.k = c(3, 5, 7, 9, 11, 15, 21, 25, 31, 41, 51, 75, 101)))
