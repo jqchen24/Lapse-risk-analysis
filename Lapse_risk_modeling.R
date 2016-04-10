@@ -408,6 +408,7 @@ NB
 ############################################################################
 ## K Nearesting Neighbors
 ## delete categorical variables for now.
+library(caret)
 set.seed(80)
 KNN <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", 
                                                       "EPEDN12X", "trans_3month", "EBUN12X", "SOW")], 
@@ -419,3 +420,21 @@ KNN <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "T
                                      summaryFunction = multiClassSummary,
                                      classProbs = TRUE),
             tuneGrid = expand.grid(.k = c(3, 5, 7, 9, 11, 15, 21, 25, 31, 41, 51, 75, 101)))
+KNN
+# ROC: 0.8825849
+# Accuracy: 0.8302561
+# Kappa: 0.5018493
+# Sensitivity: .9019395
+pred <- predict(KNN, 
+                testing[is.na(testing$DISTANCE) != T, 
+                             c("DISTANCE","RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", 
+                                                            "EPEDN12X", "trans_3month", "EBUN12X", "SOW")], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8308
+# Kappa: 0.5068
+# Sens: 0.5959
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC: 0.8832953
