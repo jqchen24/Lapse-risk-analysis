@@ -438,3 +438,34 @@ library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC: 0.8832953
+
+
+############################################################################
+############################################################################
+## Support Vector Machines
+set.seed(80)
+
+SVM_linear <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                                              "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                                              "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+                    training[is.na(training$DISTANCE) != T,]$churn,
+            method = "svmLinear", 
+            metric = "ROC",
+            trControl = trainControl(method = "cv", 
+                                     number = 5,
+                                     summaryFunction = multiClassSummary,
+                                     classProbs = TRUE),
+            tuneGrid = expand.grid(.C = c(0.001, 0.01, 0.1, 1, 10, 100, 1000)))
+
+SVM_RBF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
+                                                              "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                                              "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
+                    training[is.na(training$DISTANCE) != T,]$churn,
+                    method = "svmRadial", 
+                    metric = "ROC",
+                    trControl = trainControl(method = "cv", 
+                                             number = 5,
+                                             summaryFunction = multiClassSummary,
+                                             classProbs = TRUE),
+                    tuneGrid = expand.grid(.C = c(0.001, 0.01, 0.1, 1, 10, 100, 1000),
+                                           .sigma = c(0.001, 0.01, 0.1)))
