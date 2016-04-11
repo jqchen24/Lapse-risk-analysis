@@ -259,7 +259,7 @@ ggplot(RF_tuning)
 ## Use mtry = 2.
 set.seed(80)
 RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                       "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                       "contract_group", "sellertype", "trans_3month", "EBUN12X",
                        "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
             training[is.na(training$DISTANCE) != T,]$churn,
             # nodesize = 1, 
@@ -275,12 +275,12 @@ RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TE
 RF
 ggplot(RF)
 ## Evaluate the model on CV data.
-# ROC = 0.8952198 (requires class probabilities) 
-# Sens = 0.9113179 
-# Accuracy = 0.844833   (random forest votes for the binary outcome, default cutoff
+# ROC = 0.8955186 (requires class probabilities) 
+# Sens = 0.9112241  
+# Accuracy = 0.8447459    (random forest votes for the binary outcome, default cutoff
 # is 1/k (k is the # of classes), in our case, cutoff = 0.5.
 # But for a single tree, what is the cut off??
-# Kappa = 0.5446695 
+# Kappa = 0.5444551 
 varImp(RF, scale = F)
 plot(varImp(RF, scale = F))
 plot(varImp(RF, scale = T))
@@ -288,18 +288,18 @@ ggplot(RF)
 ## Only include the predictors from the model, otherwise we have to make sure all
 ## categorical variables have the same levels between training and testing.
 pred <- predict(RF, newdata = testing[is.na(testing$DISTANCE) != T, c("DISTANCE","RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                         "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                         "contract_group", "sellertype", "trans_3month", "EBUN12X",
                                          "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8448 
+# Accuracy: 0.8447  
 # Kappa: 0.5456 
-# Sens: 0.6204 
+# Sens: 0.6210 
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8963878
+# AUC value = 0.8963171 
 plot(perf, colorize=T, 
      print.cutoffs.at=seq(0,1,by=0.1), 
      text.adj=c(1.2,1.2), 
