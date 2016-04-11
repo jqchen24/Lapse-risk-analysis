@@ -252,7 +252,8 @@ RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENC
                                            number = 5,
                                            summaryFunction = multiClassSummary,
                                            classProbs = TRUE),
-                  tuneGrid = expand.grid(mtry = c(2, 3, 4)),
+                  # tuneGrid = expand.grid(mtry = c(2, 3, 4)),
+                  tuneLength = 5,
                   do.trace = T) 
 RF_tuning
 ggplot(RF_tuning)
