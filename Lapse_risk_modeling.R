@@ -1,7 +1,7 @@
 ##########################################
 # Load the dataset and remove account # #
 ##########################################
-accounts <- read.csv('accounts_churn_contact_flag.csv', stringsAsFactors = F)
+accounts <- read.csv('accounts_churn_contact_flag_final.csv', stringsAsFactors = F)
 str(accounts)
 accounts$ ï..account <- NULL
 accounts$CONTRACT_FLAG <- as.factor(accounts$CONTRACT_FLAG)
@@ -338,7 +338,7 @@ set.seed(80)
 ## This way one can see both ROC and accuracy, Kappa and sensitivity.
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -349,10 +349,10 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8861113
-# Sensitivity = 0.90498
-# Accuracy = 0.836885
-# Kappa = 0.5236892
+# ROC = 0.8576519
+# Sensitivity = 0.9292486
+# Accuracy = 0.8372185
+# Kappa = 0.4819983
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -362,13 +362,13 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
 ## Accuracy = 0.8439
-## Kappa = 0.5281
-## Sensitivity = 0.5755
+## Kappa = 0.528
+## Sensitivity = 0.5747
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8953035
+# AUC value = 0.8953408
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
@@ -445,18 +445,18 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ## Support Vector Machines
 set.seed(80)
-
-SVM_linear <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                                              "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                                                              "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
-                    training[is.na(training$DISTANCE) != T,]$churn,
-            method = "svmLinear", 
-            metric = "ROC",
-            trControl = trainControl(method = "cv", 
-                                     number = 5,
-                                     summaryFunction = multiClassSummary,
-                                     classProbs = TRUE),
-            tuneGrid = expand.grid(.C = c(0.001, 0.01, 0.1, 1, 10, 100, 1000)))
+# Use the formula interface which will create dummy variables and that seems to be 
+# required by SVM.
+SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+                      contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                    data = training,
+                    method = "svmLinear",
+                    metric = "ROC",
+                    trControl = trainControl(method = "cv", 
+                                             number = 5,
+                                             summaryFunction = multiClassSummary,
+                                             classProbs = TRUE),
+                    tuneGrid = expand.grid(.C = c(.003, .004)))
 
 SVM_RBF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                                                               "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
