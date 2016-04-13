@@ -458,6 +458,63 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
                     tuneGrid = expand.grid(.C = c(.003, .004)))
+# C: 0.0001
+# ROC: 0.8889124
+# Accuracy: 0.8363622
+# Kappa: 0.5332976
+# Sens: 0.8940237
+
+# C: 0.0002
+# ROC: 0.8900054
+# Sens: 0.9198379
+# 
+# C: 0.0005
+# ROC: 0.8926540
+# Sens: 0.9234348
+
+# C: 0.001
+# ROC: 0.8920896
+# Sens: 0.9247174
+
+# C: 0.002
+# ROC: 0.8930657
+# Accuracy: 0.8424252
+# Kappa: 0.5178491
+# Sens: 0.9262858
+
+# C = 0.005            best
+# ROC = 0.8930358
+# Sens 0.9269048
+
+# C: 0.008
+# ROC: 0.8929962
+# Accuracy: 0.8422512
+# Kappa: 0.5159723
+# Sens: 0.9272424
+
+# C = 0.01
+# ROC: 0.8929751
+# Accuracy: 0.8422947
+# Kappa: 0.5160710
+# Sens: 0.9272987
+
+# C = 0.05
+# ROC: 0.8927389
+# Accuracy: 0.8418014
+# Kappa: 0.5135234
+# Sens: 0.9278051
+
+# C = 0.1
+# ROC: 0.8928954
+# Accuracy: 0.8421207
+# Kappa: 0.5163433
+# Sens: 0.9265109
+
+# C: 0.5
+# ROC: 0.8850622
+# Accuracy: 0.8368700
+# Kappa: 0.4993981
+# Sens: 0.9269048
 
 SVM_RBF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                                                               "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
