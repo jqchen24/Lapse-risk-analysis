@@ -5,7 +5,7 @@ accounts <- read.csv('accounts_churn_contact_flag_final.csv', stringsAsFactors =
 str(accounts)
 accounts$ ï..account <- NULL
 accounts$CONTRACT_FLAG <- as.factor(accounts$CONTRACT_FLAG)
-accounts$contract_group <- as.factor(accounts$contract_group)
+# accounts$contract_group <- as.factor(accounts$contract_group)
 accounts$churn <- as.factor(accounts$churn)
 accounts$indseg1 <- as.factor(accounts$indseg1)
 accounts$Corp_Maj_Flag <- as.factor(accounts$Corp_Maj_Flag)
@@ -206,8 +206,8 @@ levels(testing$churn) <- c("No", "Yes")
 #### training and testing data, otherwise predict function will throw out errors.
 levels(training$indseg1) <- levels(accounts$indseg1)
 levels(testing$indseg1) <- levels(accounts$indseg1)
-levels(training$contract_group) <- levels(accounts$contract_group)
-levels(testing$contract_group) <- levels(accounts$contract_group)
+# levels(training$contract_group) <- levels(accounts$contract_group)
+# levels(testing$contract_group) <- levels(accounts$contract_group)
 levels(training$sellertype) <- levels(accounts$sellertype)
 levels(testing$sellertype) <- levels(accounts$sellertype)
 levels(training$dunsstat) <- levels(accounts$dunsstat)
@@ -276,13 +276,12 @@ RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TE
 RF
 ggplot(RF)
 ## Evaluate the model on CV data.
-# Using old data with inaccurate corp_maj_flag.
-# ROC = 0.8954414 (requires class probabilities) 
-# Sens = 0.9106239  
-# Accuracy = 0.8448039    (random forest votes for the binary outcome, default cutoff
+# ROC = 0.896901 (requires class probabilities) 
+# Sens = 0.9113742  
+# Accuracy = 0.8457903    (random forest votes for the binary outcome, default cutoff
 # is 1/k (k is the # of classes), in our case, cutoff = 0.5.
 # But for a single tree, what is the cut off??
-# Kappa = 0.545336 
+# Kappa = 0.5481246 
 varImp(RF, scale = F)
 plot(varImp(RF, scale = F))
 plot(varImp(RF, scale = T))
@@ -295,13 +294,13 @@ pred <- predict(RF, newdata = testing[is.na(testing$DISTANCE) != T, c("DISTANCE"
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8443  
-# Kappa: 0.545 
-# Sens: 0.6218 
+# Accuracy: 0.8461  
+# Kappa: 0.5508
+# Sens: 0.6277
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8962656
+# AUC value = 0.8977378
 plot(perf, colorize=T, 
      print.cutoffs.at=seq(0,1,by=0.1), 
      text.adj=c(1.2,1.2), 
@@ -424,6 +423,7 @@ KNN <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "T
                                      classProbs = TRUE),
             tuneGrid = expand.grid(.k = c(3, 5, 7, 9, 11, 15, 21, 25, 31, 41, 51, 75, 101)))
 KNN
+# Using old data with inaccurate corp_maj_flag.
 # ROC: 0.8825849
 # Accuracy: 0.8302561
 # Kappa: 0.5018493
