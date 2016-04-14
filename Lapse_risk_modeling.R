@@ -450,14 +450,14 @@ set.seed(80)
 # required by SVM.
 SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
-                    data = training,
+                    data = training[is.na(training$DISTANCE) != T,],
                     method = "svmLinear",
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.C = c(.002, .005)))
+                    tuneGrid = expand.grid(.C = c(.008,.01)))
 SVM_linear
 # C: 0.0001
 # ROC: 0.8889124
@@ -502,17 +502,19 @@ SVM_linear
 # ROC = 0.8930358
 # Sens 0.9269048
 
+# New data
 # C: 0.008
-# ROC: 0.8929962
-# Accuracy: 0.8422512
-# Kappa: 0.5159723
-# Sens: 0.9272424
+# ROC: 0.8940964
+# Accuracy: 0.8439482
+# Kappa: 0.5206024
+# Sens: 0.9288180
 
+# new data
 # C = 0.01
-# ROC: 0.8929751
-# Accuracy: 0.8422947
-# Kappa: 0.5160710
-# Sens: 0.9272987
+# ROC: 0.8940795
+# Accuracy: 0.8439627
+# Kappa: 0.5206120
+# Sens: 0.9288555
 
 # C = 0.05
 # ROC: 0.8927389
