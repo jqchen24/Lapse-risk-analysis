@@ -449,7 +449,7 @@ set.seed(80)
 # Use the formula interface which will create dummy variables and that seems to be 
 # required by SVM.
 SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                      contract_group + sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                      sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                     data = training,
                     method = "svmLinear",
                     metric = "ROC",
@@ -457,7 +457,8 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.C = c(.003, .004)))
+                    tuneGrid = expand.grid(.C = c(.002, .005)))
+SVM_linear
 # C: 0.0001
 # ROC: 0.8889124
 # Accuracy: 0.8363622
@@ -481,6 +482,21 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
 # Accuracy: 0.8424252
 # Kappa: 0.5178491
 # Sens: 0.9262858
+
+# new data
+# C: 0.003
+# ROC: 0.8942656
+# Accuracy: 0.8443978
+# Kappa: 0.5230891
+# Sens: 0.9282178
+
+# new data
+# C: 0.004
+# ROC: 0.8942407
+# Accuracy: 0.8442673
+# Kappa: 0.5222802
+# Sens: 0.9284616
+
 
 # C = 0.005            best
 # ROC = 0.8930358
