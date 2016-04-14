@@ -132,7 +132,6 @@ plot(perf)
 # AUC value = 0.8249959
 
 
-
 ########################################################
 # 10 fold Cross validation
 ########################################################
@@ -455,10 +454,12 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
                                              number = 5,
-                                             summaryFunction = multiClassSummary,
+                                             summaryFunction = twoClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.C = c(.008,.01)))
+                    tuneGrid = expand.grid(.C = c(.001,.005)))
 SVM_linear
+alphaindex(SVM_linear$finalModel)
+coef(SVM_linear$finalModel)
 # C: 0.0001
 # ROC: 0.8889124
 # Accuracy: 0.8363622
@@ -473,9 +474,10 @@ SVM_linear
 # ROC: 0.8926540
 # Sens: 0.9234348
 
+# New data
 # C: 0.001
-# ROC: 0.8920896
-# Sens: 0.9247174
+# ROC: 0.8941213
+# Sens: 0.9264734
 
 # C: 0.002
 # ROC: 0.8930657
@@ -483,7 +485,7 @@ SVM_linear
 # Kappa: 0.5178491
 # Sens: 0.9262858
 
-# new data
+# new data    best
 # C: 0.003
 # ROC: 0.8942656
 # Accuracy: 0.8443978
@@ -497,10 +499,10 @@ SVM_linear
 # Kappa: 0.5222802
 # Sens: 0.9284616
 
-
-# C = 0.005            best
-# ROC = 0.8930358
-# Sens 0.9269048
+# new data
+# C = 0.005            
+# ROC = 0.8941937
+# Sens 0.9284241
 
 # New data
 # C: 0.008
