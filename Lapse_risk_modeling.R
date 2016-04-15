@@ -337,7 +337,7 @@ set.seed(80)
 ## This way one can see both ROC and accuracy, Kappa and sensitivity.
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag + dunsstat, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -348,10 +348,10 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8958527
-# Accuracy = 0.8450214
-# Sensitivity = 0.923641
-# Kappa = 0.5310216
+# ROC = 0.8958988
+# Accuracy = 0.8452389
+# Sensitivity = 0.9236973
+# Kappa = 0.5317824
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -361,13 +361,13 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
 ## Accuracy = 0.8456
-## Kappa = 0.5333
-## Sensitivity = 0.5790
+## Kappa = 0.5332
+## Sensitivity = 0.5792
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8964744
+# AUC value = 0.8963918
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
@@ -447,7 +447,6 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 set.seed(80)
 # Use the formula interface which will create dummy variables and that seems to be 
 # required by SVM.
-# C = 0.003 doesn't seem to work for multiClassSummary
 SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                     data = training[is.na(training$DISTANCE) != T,],
