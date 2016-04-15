@@ -538,6 +538,16 @@ coef(SVM_linear$finalModel)
 # Accuracy: 0.8368700
 # Kappa: 0.4993981
 # Sens: 0.9269048
+# Evaluate the model on test set.
+pred <- predict(SVM_linear, newdata = testing, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8441
+# Kappa: 0.5231
+# Sens: 0.5601
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC: 0.8943726
 
 SVM_RBF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                                                               "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
