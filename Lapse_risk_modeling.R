@@ -240,7 +240,7 @@ table(testing$churn)/nrow(testing)
 set.seed(80)
 ## Tune mtry
 RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                                            "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
+                                                            "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
                                                             "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
                   training[is.na(training$DISTANCE) != T,]$churn,
                   # nodesize = 1, 
@@ -349,8 +349,8 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
 logReg_caret
 varImp(logReg_caret)
 # ROC = 0.8958527
-# Sensitivity = 0.923641
 # Accuracy = 0.8450214
+# Sensitivity = 0.923641
 # Kappa = 0.5310216
 
 summary(logReg_caret)
@@ -447,16 +447,17 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 set.seed(80)
 # Use the formula interface which will create dummy variables and that seems to be 
 # required by SVM.
+# C = 0.003 doesn't seem to work for multiClassSummary
 SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                      sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                      sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag + dunsstat, 
                     data = training[is.na(training$DISTANCE) != T,],
                     method = "svmLinear",
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
                                              number = 5,
-                                             summaryFunction = twoClassSummary,
+                                             summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.C = c(.001,.005)))
+                    tuneGrid = expand.grid(C = c(0.003, 0.005)))
 SVM_linear
 alphaindex(SVM_linear$finalModel)
 coef(SVM_linear$finalModel)
@@ -487,10 +488,10 @@ coef(SVM_linear$finalModel)
 
 # new data    best
 # C: 0.003
-# ROC: 0.8942656
-# Accuracy: 0.8443978
-# Kappa: 0.5230891
-# Sens: 0.9282178
+# ROC: 0.8943263
+# Accuracy: 0.8440497
+# Kappa: 0.5218873
+# Sens: 0.9281053
 
 # new data
 # C: 0.004
@@ -501,8 +502,10 @@ coef(SVM_linear$finalModel)
 
 # new data
 # C = 0.005            
-# ROC = 0.8941937
-# Sens 0.9284241
+# ROC: 0.8942543
+# Accuracy: 0.8438756
+# Kappa: 0.5210016
+# Sens 0.9282741
 
 # New data
 # C: 0.008
