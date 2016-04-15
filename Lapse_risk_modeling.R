@@ -241,7 +241,7 @@ set.seed(80)
 ## Tune mtry
 RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                                                             "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                                                            "Customer_Size", "Corp_Maj_Flag", "SOW")], 
+                                                            "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
                   training[is.na(training$DISTANCE) != T,]$churn,
                   # nodesize = 1, 
                   ntree = 500,
@@ -260,7 +260,7 @@ ggplot(RF_tuning)
 set.seed(80)
 RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "sellertype", "trans_3month", "EBUN12X",
-                       "Customer_Size", "Corp_Maj_Flag", "SOW")], 
+                       "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
             training[is.na(training$DISTANCE) != T,]$churn,
             # nodesize = 1, 
             ntree = 1000,
@@ -275,12 +275,12 @@ RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TE
 RF
 ggplot(RF)
 ## Evaluate the model on CV data.
-# ROC = 0.8966572 (requires class probabilities) 
-# Sens = 0.9111866  
-# Accuracy = 0.8453261    (random forest votes for the binary outcome, default cutoff
+# ROC = 0.896901 (requires class probabilities) 
+# Sens = 0.9113742  
+# Accuracy = 0.8457903    (random forest votes for the binary outcome, default cutoff
 # is 1/k (k is the # of classes), in our case, cutoff = 0.5.
 # But for a single tree, what is the cut off??
-# Kappa = 0.5466315 
+# Kappa = 0.5481246 
 varImp(RF, scale = F)
 plot(varImp(RF, scale = F))
 plot(varImp(RF, scale = T))
@@ -293,9 +293,9 @@ pred <- predict(RF, newdata = testing[is.na(testing$DISTANCE) != T, c("DISTANCE"
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.846  
-# Kappa: 0.5504
-# Sens: 0.6272
+# Accuracy: 0.8461  
+# Kappa: 0.5508
+# Sens: 0.6277
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
