@@ -580,9 +580,9 @@ gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(interaction.depth = 5,
-                                           n.trees = (1:20)*15,
-                                           shrinkage = c(0.01, 0.001),
+                    tuneGrid = expand.grid(interaction.depth = c(5, 7, 9),
+                                           n.trees = (1:20)*25,
+                                           shrinkage = c(0.1, 0.05),
                                            n.minobsinnode = 20))
 gbm
 gbm$finalModel
@@ -602,13 +602,20 @@ plot(gbm)
 # Accuracy: 0.8470376
 # Kappa: 0.5454162
 # Sens: 0.9178265
+
+# Among depth 5, 7, 9, ntress = (1:20)*25, shrinkage = 0.1, 0.05
+# ROC: 0.8987033
+# Accuracy: 0.8470956
+# Kappa: 0.5449344
+# Sens: 0.9184455
+
 pred <- predict(gbm, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 # Accuracy: 0.847
-# Kappa: 0.5471
-# Sens: 0.6104
+# Kappa: 0.5459
+# Sens: 0.6072
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8991723
+# AUC: 0.8993878
 
