@@ -562,3 +562,40 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
                     tuneGrid = expand.grid(.C = rep(0.003, 2),
                                            .sigma = c(0.001, 0.01)))
 # sigma is a smoothing parameter
+
+
+############################################################################
+############################################################################
+## Gradient boosting machine
+## 3 tuning parameters: # of iterations, complexity of the tree, learning rate
+set.seed(80)
+gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+                      sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                    data = training[is.na(training$DISTANCE) != T,],
+                    method = "gbm",
+                    metric = "ROC",
+                    trControl = trainControl(method = "cv", 
+                                             number = 5,
+                                             summaryFunction = multiClassSummary,
+                                             classProbs = TRUE),
+                    tuneGrid = expand.grid(interaction.depth = c(1, 5, 9),
+                                           n.trees = (1:20)*30,
+                                           shrinkage = 0.1,
+                                           n.minobsinnode = 20))
+gbm
+plot(gbm)
+
+# ROC: 0.8985801
+# Accuracy: 0.8474002
+# Kappa: 0.5461822
+# Sens: 0.9183518
+pred <- predict(gbm, newdata = testing, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.847
+# Kappa: 0.5471
+# Sens: 0.6104
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC: 0.8991723
+
