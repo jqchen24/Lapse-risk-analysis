@@ -299,7 +299,7 @@ confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn 
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.897721
+# AUC value = 0.8977378
 plot(perf, colorize=T, 
      print.cutoffs.at=seq(0,1,by=0.1), 
      text.adj=c(1.2,1.2), 
@@ -407,12 +407,11 @@ NB
 ############################################################################
 ############################################################################
 ## K Nearesting Neighbors
-## delete categorical variables for now.
 library(caret)
 set.seed(80)
-KNN <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", 
-                                                      "EPEDN12X", "trans_3month", "EBUN12X", "SOW")], 
-            training[is.na(training$DISTANCE) != T,]$churn,
+KNN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+               sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+             data = training[is.na(training$DISTANCE) != T,],
             method = "knn", 
             metric = "ROC",
             trControl = trainControl(method = "cv", 
@@ -421,24 +420,22 @@ KNN <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "T
                                      classProbs = TRUE),
             tuneGrid = expand.grid(.k = c(3, 5, 7, 9, 11, 15, 21, 25, 31, 41, 51, 75, 101)))
 KNN
-# Using old data with inaccurate corp_maj_flag.
-# ROC: 0.8825849
-# Accuracy: 0.8302561
-# Kappa: 0.5018493
-# Sensitivity: .9019395
+plot(KNN)
+# ROC: 0.8648815
+# Accuracy: 0.8178258
+# Kappa: 0.4440642
+# Sensitivity: 0.9093484
 pred <- predict(KNN, 
-                testing[is.na(testing$DISTANCE) != T, 
-                             c("DISTANCE","RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", 
-                                                            "EPEDN12X", "trans_3month", "EBUN12X", "SOW")], 
+                testing[is.na(testing$DISTANCE) != T,], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
-# Accuracy: 0.8308
-# Kappa: 0.5068
-# Sens: 0.5959
+# Accuracy: 0.8166
+# Kappa: 0.4454
+# Sens: 0.5149
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8832953
+# AUC: 0.8657443
 
 
 ############################################################################
@@ -447,6 +444,10 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 set.seed(80)
 # Use the formula interface which will create dummy variables and that seems to be 
 # required by SVM.
+
+####
+# Need to test whether excluding the cases where distance is null makes any difference.
+####
 SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                     data = training[is.na(training$DISTANCE) != T,],
@@ -456,8 +457,9 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(C = c(0.003)))
+                    tuneGrid = expand.grid(.C = c(0.003, 0.005)))
 SVM_linear
+plot.svm(SVM_linear)
 alphaindex(SVM_linear$finalModel)
 coef(SVM_linear$finalModel)
 # C: 0.0001
@@ -547,16 +549,16 @@ library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC: 0.8943726
-
-SVM_RBF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                                              "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                                                              "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
-                    training[is.na(training$DISTANCE) != T,]$churn,
+set.seed(80)
+SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+                   sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                 data = training[is.na(training$DISTANCE) != T,],
                     method = "svmRadial", 
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.C = c(0.001, 0.01, 0.1, 1, 10, 100, 1000),
-                                           .sigma = c(0.001, 0.01, 0.1)))
+                    tuneGrid = expand.grid(.C = rep(0.003, 2),
+                                           .sigma = c(0.001, 0.01)))
+# sigma is a smoothing parameter
