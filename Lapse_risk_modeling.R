@@ -578,22 +578,27 @@ gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(interaction.depth = c(2, 3, 4),
+                    tuneGrid = expand.grid(interaction.depth = c(6, 7, 8),
                                            n.trees = (1:20)*30,
                                            shrinkage = 0.1,
                                            n.minobsinnode = 20))
 gbm
 plot(gbm)
-# Best depth = 5
+# Among 1, 5, 9 Best depth = 5
 # ROC: 0.8985801
 # Accuracy: 0.8474002
 # Kappa: 0.5461822
 # Sens: 0.9183518
-# best depth =  2
+# Among 2, 3, 4,best depth =  2
 # ROC: 0.8985513
 # Accuracy: 0.8473711
 # Kappa: 0.5455359
 # Sens: 0.9188019
+# Among 6, 7, 8 best depth = 7
+# ROC: 0.8986632
+# Accuracy: 0.8470376
+# Kappa: 0.5454162
+# Sens: 0.9178265
 pred <- predict(gbm, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 # Accuracy: 0.847
