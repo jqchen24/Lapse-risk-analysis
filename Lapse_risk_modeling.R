@@ -568,6 +568,8 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
 ############################################################################
 ## Gradient boosting machine
 ## 3 tuning parameters: # of iterations, complexity of the tree, learning rate
+## Note: can try to reduce # of trees, lower shrinkage. 
+## try to reduce the increments of n.trees.
 set.seed(80)
 gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
@@ -578,13 +580,14 @@ gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(interaction.depth = c(6, 7, 8),
-                                           n.trees = (1:20)*30,
-                                           shrinkage = 0.1,
+                    tuneGrid = expand.grid(interaction.depth = 5,
+                                           n.trees = (1:20)*15,
+                                           shrinkage = c(0.01, 0.001),
                                            n.minobsinnode = 20))
 gbm
+gbm$finalModel
 plot(gbm)
-# Among 1, 5, 9 Best depth = 5
+# Among 1, 5, 9 Best depth = 5   * BEST
 # ROC: 0.8985801
 # Accuracy: 0.8474002
 # Kappa: 0.5461822
