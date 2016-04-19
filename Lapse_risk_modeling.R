@@ -641,8 +641,8 @@ glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + 
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(alpha = c(0, 0.05, 1),
-                                           lambda = c(0.01, 0.1)))
+                    tuneGrid = expand.grid(.alpha = c(0, 0.05, 0.01),
+                                           .lambda = c(0.005, 0.001, 0.0005)))
 glmnet
 plot(glmnet)
 # alpha = c(0, 0.05, 1),
@@ -652,3 +652,19 @@ plot(glmnet)
 # Accuracy: 0.8440207
 # Kappa: 0.5206648
 # Sens:0.9289868
+
+# alpha = c(0, 0.05, 0.5, 1),
+# lambda = c(0.01, 0.005, 0.001)
+# best alpha = 0.05, lamda = 0.001
+# ROC: 0.8941201
+# Accuracy: 0.8445283
+# Kappa: 0.5273298
+# Sens: 0.9251604
+
+# alpha = c(0, 0.05, 0.01),
+# lambda = c(0.005, 0.001, 0.0005)
+# Best alpha = 0.05 and lambda = 0.0005
+# ROC: 0.8943079
+# Accuracy: 0.8446734
+# Kappa: 0.5281346
+# Sens: 0.9249541
