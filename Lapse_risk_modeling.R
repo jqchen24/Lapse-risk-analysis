@@ -390,17 +390,15 @@ head(subset(cutoffs, fpr < 0.2))
 ############################################################################
 ## Naive Bayes using caret
 set.seed(80)
-NB <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                                      "contract_group", "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                                                      "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
-            training[is.na(training$DISTANCE) != T,]$churn,
+NB <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+              sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+            data = training[is.na(training$DISTANCE) != T,],
             method = "nb", 
             metric = "ROC",
             trControl = trainControl(method = "cv", 
                                      number = 5,
                                      summaryFunction = multiClassSummary,
-                                     classProbs = TRUE),
-            do.trace = T)
+                                     classProbs = TRUE))
 NB
 ## Poor performance.
 
@@ -629,4 +627,6 @@ library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC: 0.899218
+
+
 
