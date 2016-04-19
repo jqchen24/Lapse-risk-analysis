@@ -569,7 +569,7 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
 ## Gradient boosting machine
 ## 3 tuning parameters: # of iterations, complexity of the tree, learning rate
 ## Note: can try to reduce # of trees, lower shrinkage. 
-## try to reduce the increments of n.trees.
+## try to reduce the increments of n.trees -- 20
 set.seed(80)
 gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
@@ -581,8 +581,8 @@ gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
                     tuneGrid = expand.grid(interaction.depth = c(5, 7, 9),
-                                           n.trees = (1:20)*30,
-                                           shrinkage = c(0.03, 0.05),
+                                           n.trees = (1:20)*25,
+                                           shrinkage = c(0.07, 0.05, 0.1),
                                            n.minobsinnode = 20))
 gbm
 gbm$finalModel
@@ -610,20 +610,23 @@ plot(gbm)
 # Kappa: 0.5449344
 # Sens: 0.9184455
 
-# among depth 5, 7, 9, ntrees = (1:20)*30, shrinkage - 0.03, 0.05
-# best shrinkage = 0.03, depth = 9, ntrees = 270
-# ROC: 0.8986807
-# Accuracy: 0.8466314
-# Kappa: 0.5451132
-# Sens: 0.9167762
+# Among depth 5, 7, 9, ntress = (1:20)*25, shrinkage = c(0.07, 0.05, 0.1)
+# n.trees = 200
+# interaction.depth = 9
+# shrinkage = 0.05
+# ROC: 0.8987161
+# Accuracy: 0.8470231
+# Kappa: 0.5467440
+# 0.9166074
+
 
 pred <- predict(gbm, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
 # Accuracy: 0.847
-# Kappa: 0.5459
-# Sens: 0.6072
+# Kappa: 0.5465
+# Sens: 0.6060
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8993878
+# AUC: 0.899218
 
