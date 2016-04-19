@@ -688,6 +688,28 @@ ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC: 0.8952311
 
+############################################################################
+############################################################################
+## Neural Network
+set.seed(80)
+NN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+                  sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                data = training[is.na(training$DISTANCE) != T,],
+                method = "nnet",
+                metric = "ROC",
+                trControl = trainControl(method = "cv", 
+                                         number = 5,
+                                         summaryFunction = multiClassSummary,
+                                         classProbs = TRUE),
+                tuneGrid = expand.grid(.size = c(1, 5, 10),
+                                       .decay = c(0, 0.001, 0.1)))
+# size = c(1, 5, 10),
+# decay = c(0, 0.001, 0.1)
+# best size = 1, decay = 0.1
+# ROC: 0.8952092
+# Accuracy: 0.8447169
+# Kappa: 0.5502434
+# Sens: 0.9059723
 
 ############################################################################
 ############################################################################
@@ -696,7 +718,11 @@ compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Neare
 summary(compare_perf)
 splom(compare_perf, metric = "ROC")
 parallelplot(compare_perf, metric = "ROC")
+dotplot(compare_perf)
 dotplot(compare_perf, metric = "ROC")
+dotplot(compare_perf, metric = "Accuracy")
+dotplot(compare_perf, metric = "Sensitivity")
 rocDiffs <- diff(compare_perf, metric = "ROC")
 summary(rocDiffs)
 dotplot(rocDiffs, metric = "ROC")
+bwplot(compare_perf, metric = "ROC")
