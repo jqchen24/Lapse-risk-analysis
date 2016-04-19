@@ -646,6 +646,7 @@ glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + 
                                            .lambda = c(0.001, 0.0005, 0.0001)))
 glmnet
 plot(glmnet)
+plot(glmnet, metric = "Sensitivity")
 # alpha = c(0, 0.05, 1),
 # lambda = c(0.01, 0.1)
 # Best alpha = 0.05 and lambda = 0.01
@@ -691,4 +692,11 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ############################################################################
 # COMPARING THE PERFORMANCES OF DIFFERENT MODELS
-compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Nearest = KNN, SVM = SVM_linear, GLM = glmnet))
+compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GLMNET = glmnet))
+summary(compare_perf)
+splom(compare_perf, metric = "ROC")
+parallelplot(compare_perf, metric = "ROC")
+dotplot(compare_perf, metric = "ROC")
+rocDiffs <- diff(compare_perf, metric = "ROC")
+summary(rocDiffs)
+dotplot(rocDiffs, metric = "ROC")
