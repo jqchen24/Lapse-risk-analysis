@@ -342,16 +342,16 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
                       method = "glm", 
                       metric = "ROC",
                       trControl = trainControl(method = "cv", 
-                                               number = 10,
+                                               number = 5,
                                                summaryFunction = multiClassSummary,
                                                classProbs = TRUE),
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8958988
-# Accuracy = 0.8452389
-# Sensitivity = 0.9236973
-# Kappa = 0.5317824
+# ROC = 0.8187789
+# Accuracy = 0.8320266
+# Sensitivity = 0.9388526
+# Kappa = 0.432692
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -631,6 +631,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ############################################################################
 ## Ridge/Lasso regression -- GLMNET
+library(caret)
 set.seed(80)
 glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
@@ -685,3 +686,9 @@ library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC: 0.8952311
+
+
+############################################################################
+############################################################################
+# COMPARING THE PERFORMANCES OF DIFFERENT MODELS
+compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Nearest = KNN, SVM = SVM_linear, GLM = glmnet))
