@@ -628,5 +628,27 @@ ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC: 0.899218
 
-
-
+############################################################################
+############################################################################
+## Ridge/Lasso regression -- GLMNET
+set.seed(80)
+glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+                      sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                    data = training[is.na(training$DISTANCE) != T,],
+                    method = "glmnet",
+                    metric = "ROC",
+                    trControl = trainControl(method = "cv", 
+                                             number = 5,
+                                             summaryFunction = multiClassSummary,
+                                             classProbs = TRUE),
+                    tuneGrid = expand.grid(alpha = c(0, 0.05, 1),
+                                           lambda = c(0.01, 0.1)))
+glmnet
+plot(glmnet)
+# alpha = c(0, 0.05, 1),
+# lambda = c(0.01, 0.1)
+# Best alpha = 0.05 and lambda = 0.01
+# ROC: 0.8934721
+# Accuracy: 0.8440207
+# Kappa: 0.5206648
+# Sens:0.9289868
