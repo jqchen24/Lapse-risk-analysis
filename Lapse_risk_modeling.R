@@ -641,8 +641,8 @@ glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + 
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.alpha = c(0, 0.05, 0.01),
-                                           .lambda = c(0.005, 0.001, 0.0005)))
+                    tuneGrid = expand.grid(.alpha = c(0.05, 0.025),
+                                           .lambda = c(0.001, 0.0005, 0.0001)))
 glmnet
 plot(glmnet)
 # alpha = c(0, 0.05, 1),
@@ -668,3 +668,20 @@ plot(glmnet)
 # Accuracy: 0.8446734
 # Kappa: 0.5281346
 # Sens: 0.9249541
+
+# alpha = c(0.05, 0.025),
+# lambda = c(0.001, 0.0005, 0.0001)
+# best alpha = 0.05 and lambda = 1e-04
+# ROC: 0.8943337
+# Accuracy: 0.8446734
+# Kappa: 0.5281125
+# Sens: 0.9249729
+pred <- predict(glmnet, newdata = testing, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8452
+# Kappa: 0.5299
+# Sens: 0.5723
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC: 0.8952311
