@@ -671,9 +671,9 @@ plot(glmnet, metric = "Sensitivity")
 # Kappa: 0.5281346
 # Sens: 0.9249541
 
-# alpha = c(0.05, 0.025),
+# alpha = c(0.05, 0.025),   
 # lambda = c(0.001, 0.0005, 0.0001)
-# best alpha = 0.05 and lambda = 1e-04
+# best alpha = 0.05 and lambda = 1e-04   best
 # ROC: 0.8943337
 # Accuracy: 0.8446734
 # Kappa: 0.5281125
@@ -691,18 +691,23 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ############################################################################
 ## Neural Network
+## single hidden layer.
 set.seed(80)
 NN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                   sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                 data = training[is.na(training$DISTANCE) != T,],
                 method = "nnet",
                 metric = "ROC",
+            maxit = 300,
                 trControl = trainControl(method = "cv", 
                                          number = 5,
                                          summaryFunction = multiClassSummary,
                                          classProbs = TRUE),
-                tuneGrid = expand.grid(.size = c(1, 5, 10),
-                                       .decay = c(0, 0.001, 0.1)))
+                tuneGrid = expand.grid(.size = c(4, 6, 8, 9, 10),
+                                       .decay = c(4, 5, 6, 7, 8, 9, 10)))
+NN
+plot(NN)
+# maxit = 100
 # size = c(1, 5, 10),
 # decay = c(0, 0.001, 0.1)
 # best size = 1, decay = 0.1
@@ -711,10 +716,68 @@ NN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(
 # Kappa: 0.5502434
 # Sens: 0.9059723
 
+# size = c(1, 2, 3),
+# decay = c(0.001, 0.5, 1)
+# Best size = 1 and decay = 1
+# ROC: 0.8959476
+# Accuracy: 0.8449345
+# Kappa: 0.5441154
+# Sens: 0.9121432
+
+# size = c(1, 2, 3),
+# decay = c(1, 5, 10)
+# best size = 1, decay = 5
+# ROC: 0.8961101
+# Accuracy: 0.8455001
+# Kappa: 0.5474254
+# Sens: 0.9110554
+
+# size = c(1, 5, 10),
+# decay = c(2, 3, 4, 5)
+# best size = 1, decay = 4
+# ROC: 0.8960830
+# Accuracy: 0.8451955
+# Kappa: 0.5461504
+# Sens: 0.9111866
+
+# size = c(1, 4, 6, 7),
+# decay = c(2, 3, 4, 5, 6, 7, 8)
+# Best size = 6, decay = 5
+# ROC: 0.8966811
+# Accuracy: 0.8464429
+# Kappa:0.5434766
+# Sens: 0.9175827
+
+# size = c(1, 6, 8, 9, 10),
+# decay = c(3, 4, 5, 6, 7, 8, 9, 10)))
+# Best size = 6 decay = 7
+# ROC: 0.8963273
+# Accuracy: 0.8457467
+# Kappa: 0.5436204
+# Sens: 0.9151818
+
+# size = c(4, 6, 8, 9, 10),  
+# decay = c(4, 5, 6, 7, 8, 9, 10)
+# best size = 9, decay = 4              BEST
+# ROC: 0.8984885
+# Accuracy: 0.8472841
+# Kappa: 0.5473744
+# Sens: 0.9169075
+
+pred <- predict(NN, newdata = testing, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8475
+# Kappa: 0.548
+# Sens: 0.6101
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC: 0.8989443
+
 ############################################################################
 ############################################################################
 # COMPARING THE PERFORMANCES OF DIFFERENT MODELS
-compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GLMNET = glmnet))
+compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GLMNET = glmnet, NeuralNetwork = NN))
 summary(compare_perf)
 splom(compare_perf, metric = "ROC")
 parallelplot(compare_perf, metric = "ROC")
