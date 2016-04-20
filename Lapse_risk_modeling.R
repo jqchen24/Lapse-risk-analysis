@@ -337,7 +337,7 @@ set.seed(80)
 ## This way one can see both ROC and accuracy, Kappa and sensitivity.
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag + dunsstat, 
+                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -348,10 +348,10 @@ logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS1
                       family = binomial)
 logReg_caret
 varImp(logReg_caret)
-# ROC = 0.8187789
-# Accuracy = 0.8320266
-# Sensitivity = 0.9388526
-# Kappa = 0.432692
+# ROC = 0.8957514
+# Accuracy = 0.8447169
+# Sensitivity = 0.9233785
+# Kappa = 0.5301955
 
 summary(logReg_caret)
 # Note that for predict.train under caret, type argument can only be "raw" or "prob"
@@ -361,13 +361,13 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == 1, positive = "TRUE")
 ## Need to exclude the missing values in distance, otherwise confusionMatrix won't work.
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T,]$churn == "Yes", positive = "TRUE")
 ## Accuracy = 0.8456
-## Kappa = 0.5332
-## Sensitivity = 0.5792
+## Kappa = 0.5333
+## Sensitivity = 0.5790
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T,]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8963918
+# AUC value = 0.8964744
 perf <- performance(ROCRpred, "tpr", "fpr")
 plot(perf)
 plot(perf, colorize=T)
