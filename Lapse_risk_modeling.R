@@ -5,12 +5,14 @@ accounts <- read.csv('accounts_churn_contact_flag_final.csv', stringsAsFactors =
 str(accounts)
 accounts$ ï..account <- NULL
 accounts$CONTRACT_FLAG <- as.factor(accounts$CONTRACT_FLAG)
-# accounts$contract_group <- as.factor(accounts$contract_group)
 accounts$churn <- as.factor(accounts$churn)
 accounts$indseg1 <- as.factor(accounts$indseg1)
 accounts$Corp_Maj_Flag <- as.factor(accounts$Corp_Maj_Flag)
 accounts$dunsstat <- as.factor(accounts$dunsstat)
 accounts$Customer_Size <- as.factor(accounts$Customer_Size)
+accounts$DUNSSBUS <- NULL
+accounts$DUNSPUBL <- NULL
+accounts$contract_group <- NULL
 
 # Create some scatter plots
 library(ggplot2)
@@ -57,6 +59,7 @@ library(dplyr)
 accounts <- mutate(accounts, discount = (WA_S12X - (SALES12X - FINDS12X))/WA_S12X)
 ggplot(accounts, aes(discount)) + geom_bar()
 accounts <- mutate(accounts, sellertype = CSG %/% 10000)
+accounts$CSG <- NULL
 accounts$sellertype <- as.factor(accounts$sellertype)
 accounts <- mutate(accounts, distance_far = (DISTANCE >= 5))
 accounts <- mutate(accounts, SOW = SALES12X/mrospend)
@@ -335,6 +338,23 @@ set.seed(80)
 # Following threw an error "all the ROC metric values are missing", if including twoClassSummary.
 ## set summaryFunction to be multiClassSummary and set classProbs = T, metric = "ROC"
 ## This way one can see both ROC and accuracy, Kappa and sensitivity.
+##################################################################################
+## RFE feature selection
+##################################################################################
+set.seed(80)
+caretFuncs$summary <- multiClassSummary
+logReg <- rfe(churn ~ .,
+              data = training[is.na(training$DISTANCE) != T,], 
+                      method = "glm", 
+                      metric = "ROC",
+                      rfeControl = rfeControl(method = "cv", 
+                                               number = 5,
+                                               functions = caretFuncs),
+                    trControl = trainControl(classProbs = TRUE,
+                                             summaryFunction = multiClassSummary),
+                      family = binomial)
+
+
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                         sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
@@ -418,6 +438,8 @@ KNN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
                                      classProbs = TRUE),
             tuneGrid = expand.grid(.k = c(3, 5, 7, 9, 11, 15, 21, 25, 31, 41, 51, 75, 101)))
 KNN
+varImp(KNN)
+### can't generate the variable importance.
 plot(KNN)
 # ROC: 0.8648815
 # Accuracy: 0.8178258
@@ -457,6 +479,8 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
                                              classProbs = TRUE),
                     tuneGrid = expand.grid(.C = c(0.003, 0.005)))
 SVM_linear
+varImp(SVM_linear)
+### Can't generate the variable importance.
 plot.svm(SVM_linear)
 alphaindex(SVM_linear$finalModel)
 coef(SVM_linear$finalModel)
@@ -585,6 +609,7 @@ gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
 gbm
 gbm$finalModel
 plot(gbm)
+varImp(gbm)
 # Among 1, 5, 9 Best depth = 5   * BEST
 # ROC: 0.8985801
 # Accuracy: 0.8474002
@@ -710,6 +735,7 @@ NN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(
                                        .decay = c(4, 10, 13, 15)))
 NN
 plot(NN)
+varImp(NN)
 # maxit = 100
 # size = c(1, 5, 10),
 # decay = c(0, 0.001, 0.1)
