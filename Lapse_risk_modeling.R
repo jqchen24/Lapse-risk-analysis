@@ -692,19 +692,22 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ## Neural Network
 ## single hidden layer.
+## parameters to tune: 
+## size: number of units in the hidden layer
+## decay: parameter for weight decay
 set.seed(80)
 NN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                   sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                 data = training[is.na(training$DISTANCE) != T,],
                 method = "nnet",
                 metric = "ROC",
-            maxit = 300,
+            maxit = 500,
                 trControl = trainControl(method = "cv", 
                                          number = 5,
                                          summaryFunction = multiClassSummary,
                                          classProbs = TRUE),
-                tuneGrid = expand.grid(.size = c(4, 6, 8, 9, 10),
-                                       .decay = c(4, 5, 6, 7, 8, 9, 10)))
+                tuneGrid = expand.grid(.size = c(6, 9, 12),
+                                       .decay = c(4, 10, 13, 15)))
 NN
 plot(NN)
 # maxit = 100
@@ -756,23 +759,34 @@ plot(NN)
 # Kappa: 0.5436204
 # Sens: 0.9151818
 
+# maxit = 300
 # size = c(4, 6, 8, 9, 10),  
 # decay = c(4, 5, 6, 7, 8, 9, 10)
-# best size = 9, decay = 4              BEST
+# best size = 9, decay = 4              
 # ROC: 0.8984885
 # Accuracy: 0.8472841
 # Kappa: 0.5473744
 # Sens: 0.9169075
 
+# maxit = 500              BEST
+# size = c(6, 9, 12),
+# decay = c(4, 10, 13, 15)
+# Best size = 12 decay = 4
+# ROC: 0.8985449
+# Accuracy: 0.8477918
+# Kappa: 0.5485173
+# Sens: 0.9175640
+
+
 pred <- predict(NN, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
-# Accuracy: 0.8475
+# Accuracy: 0.8473
 # Kappa: 0.548
-# Sens: 0.6101
+# Sens: 0.6110
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8989443
+# AUC: 0.8992348
 
 ############################################################################
 ############################################################################
