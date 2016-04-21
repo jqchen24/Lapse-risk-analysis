@@ -13,6 +13,9 @@ accounts$Customer_Size <- as.factor(accounts$Customer_Size)
 accounts$DUNSSBUS <- NULL
 accounts$DUNSPUBL <- NULL
 accounts$contract_group <- NULL
+accounts$sales_201509 <- NULL
+accounts$sales_201510 <- NULL
+accounts$sales_201511 <- NULL
 
 # Create some scatter plots
 library(ggplot2)
@@ -65,6 +68,7 @@ accounts <- mutate(accounts, distance_far = (DISTANCE >= 5))
 accounts <- mutate(accounts, SOW = SALES12X/mrospend)
 # INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
 accounts <- mutate(accounts, trans_3month = TRANS01 + TRANS02 + TRANS03)
+
 
 # split the dataset to training/test
 library(caTools)
@@ -260,6 +264,29 @@ RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENC
 RF_tuning
 ggplot(RF_tuning)
 ## Use mtry = 2.
+## feature selection by RF.
+set.seed(180)
+RF_RFE <- train(training[complete.cases(training),c(1:198, 203)],
+                training[complete.cases(training), 199],
+                ntree = 1000,
+                method = "rf", 
+                metric = "ROC",
+                trControl = trainControl(method = "cv", 
+                                         number = 5,
+                                         summaryFunction = multiClassSummary,
+                                         classProbs = TRUE),
+                tuneGrid = expand.grid(mtry = 2),
+                do.trace = T)
+RF_RFE
+varImp(RF_RFE)
+# mtry = 2
+# ROC: 0.8946654
+# Accuracy: 0.846334
+# Kappa: 0.5334343
+# Sens: 0.9216593
+
+
+
 set.seed(80)
 RF <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
                        "sellertype", "trans_3month", "EBUN12X",
@@ -658,9 +685,8 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ## Ridge/Lasso regression -- GLMNET
 library(caret)
 set.seed(80)
-glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                      sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
-                    data = training[is.na(training$DISTANCE) != T,],
+glmnet <- train(training[complete.cases(training),c(1:198, 203)],
+                training[complete.cases(training), 199],
                     method = "glmnet",
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
