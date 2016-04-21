@@ -264,9 +264,9 @@ RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENC
 RF_tuning
 ggplot(RF_tuning)
 ## Use mtry = 2.
-## feature selection by RF.
-set.seed(180)
-RF_RFE <- train(training[complete.cases(training),c(1:198, 203)],
+## Automatic feature selection by RF.
+set.seed(80)
+RF_RFE_1000 <- train(training[complete.cases(training),c(1:198, 203)],
                 training[complete.cases(training), 199],
                 ntree = 1000,
                 method = "rf", 
@@ -275,16 +275,53 @@ RF_RFE <- train(training[complete.cases(training),c(1:198, 203)],
                                          number = 5,
                                          summaryFunction = multiClassSummary,
                                          classProbs = TRUE),
-                tuneGrid = expand.grid(mtry = 2),
+                tuneGrid = expand.grid(mtry = c(2, 3, 4)),
+                do.trace = T)
+set.seed(80)
+RF_RFE_500 <- train(training[complete.cases(training),c(1:198, 203)],
+                training[complete.cases(training), 199],
+                ntree = 500,
+                method = "rf", 
+                metric = "ROC",
+                trControl = trainControl(method = "cv", 
+                                         number = 5,
+                                         summaryFunction = multiClassSummary,
+                                         classProbs = TRUE),
+                tuneGrid = expand.grid(mtry = c(2, 3, 4)),
                 do.trace = T)
 RF_RFE
-varImp(RF_RFE)
-# mtry = 2
+varImp(RF_RFE_1000)
+ggplot(RF_RFE_1000)
+# mtry = 2 ntree = 1000
 # ROC: 0.8946654
 # Accuracy: 0.846334
 # Kappa: 0.5334343
 # Sens: 0.9216593
 
+# mtry = c(2, 3, 4) ntree = 1000
+# Best mtry = 4
+# ROC: 0.8959951
+# Accuracy: 0.8467142
+# Kappa: 0.5322052
+# Sens: 0.9238528
+
+# mtry = c(2, 3, 4) ntree = 500
+# best mtry = 4
+# ROC: 0.8958161
+# Accuracy: 0.8459994
+# Kappa: 0.5300067
+# Sens: 0.9234023
+pred <- predict(RF_RFE_1000, newdata = testing[complete.cases(testing),c(1:198, 203)], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[complete.cases(testing), ]$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.8465  
+# Kappa: 0.5339
+# Sens: 0.5849
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.8970434
 
 
 set.seed(80)
