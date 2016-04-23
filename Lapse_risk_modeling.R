@@ -266,7 +266,7 @@ ggplot(RF_tuning)
 ## Use mtry = 2.
 ## Automatic feature selection by RF.
 set.seed(80)
-RF_RFE_1000 <- train(training[complete.cases(training),c(1:198, 203)],
+RF_RFE_1000 <- train(training[complete.cases(training),c(1:198, 201, 203)],
                 training[complete.cases(training), 199],
                 ntree = 1000,
                 method = "rf", 
@@ -275,30 +275,13 @@ RF_RFE_1000 <- train(training[complete.cases(training),c(1:198, 203)],
                                          number = 5,
                                          summaryFunction = multiClassSummary,
                                          classProbs = TRUE),
-                tuneGrid = expand.grid(mtry = c(2, 3, 4)),
+                tuneGrid = expand.grid(mtry = c(14, 16, 18)),
                 do.trace = T)
-set.seed(80)
-RF_RFE_500 <- train(training[complete.cases(training),c(1:198, 203)],
-                training[complete.cases(training), 199],
-                ntree = 500,
-                method = "rf", 
-                metric = "ROC",
-                trControl = trainControl(method = "cv", 
-                                         number = 5,
-                                         summaryFunction = multiClassSummary,
-                                         classProbs = TRUE),
-                tuneGrid = expand.grid(mtry = c(2, 3, 4)),
-                do.trace = T)
-RF_RFE
+RF_RFE_1000
 varImp(RF_RFE_1000)
 ggplot(RF_RFE_1000)
-# mtry = 2 ntree = 1000
-# ROC: 0.8946654
-# Accuracy: 0.846334
-# Kappa: 0.5334343
-# Sens: 0.9216593
 
-# mtry = c(2, 3, 4) ntree = 1000
+# mtry = c(2, 3, 4) ntree = 1000   BEST
 # Best mtry = 4
 # ROC: 0.8959951
 # Accuracy: 0.8467142
@@ -311,17 +294,32 @@ ggplot(RF_RFE_1000)
 # Accuracy: 0.8459994
 # Kappa: 0.5300067
 # Sens: 0.9234023
-pred <- predict(RF_RFE_1000, newdata = testing[complete.cases(testing),c(1:198, 203)], 
+
+# mtry = c(16, 12, 8) ntree = 1000, sellertype excluded
+# best mtry = 16
+# ROC: 0.8972314
+# Accuracy: 0.8470793
+# Kappa: 0.5335432
+# Sens: 0.9239116
+
+# mtry = c(14, 16, 18) ntree = 1000, including sellertype
+# best mtry = 18
+# ROC: 0.8972072
+# Accuracy: 0.8475659
+# Kappa: 0.5358697
+# Sens: 0.9235198
+
+pred <- predict(RF_RFE_1000, newdata = testing[complete.cases(testing),c(1:198, 201, 203)], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[complete.cases(testing), ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8465  
-# Kappa: 0.5339
-# Sens: 0.5849
+# Accuracy: 0.8477  
+# Kappa: 0.5378
+# Sens: 0.5880
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8970434
+# AUC value = 0.8985856
 
 
 set.seed(80)
@@ -403,7 +401,7 @@ set.seed(80)
 ## set summaryFunction to be multiClassSummary and set classProbs = T, metric = "ROC"
 ## This way one can see both ROC and accuracy, Kappa and sensitivity.
 ##################################################################################
-## RFE feature selection
+## RFE feature selection  -- doesn't work
 ##################################################################################
 set.seed(80)
 caretFuncs$summary <- multiClassSummary
@@ -417,7 +415,19 @@ logReg <- rfe(churn ~ .,
                     trControl = trainControl(classProbs = TRUE,
                                              summaryFunction = multiClassSummary),
                       family = binomial)
-
+##############################
+## stepwise feature selection
+##############################
+set.seed(80)
+logReg_caret <- train(training[complete.cases(training),c(1:198, 203)],
+                      training[complete.cases(training), 199],
+                      method = "glmStepAIC", 
+                      metric = "ROC",
+                      trControl = trainControl(method = "cv", 
+                                               number = 5,
+                                               summaryFunction = multiClassSummary,
+                                               classProbs = TRUE),
+                      family = binomial)
 
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
@@ -674,7 +684,7 @@ gbm
 gbm$finalModel
 plot(gbm)
 varImp(gbm)
-# Among 1, 5, 9 Best depth = 5   * BEST
+# Among 1, 5, 9 Best depth = 5   
 # ROC: 0.8985801
 # Accuracy: 0.8474002
 # Kappa: 0.5461822
@@ -697,14 +707,14 @@ varImp(gbm)
 # Kappa: 0.5449344
 # Sens: 0.9184455
 
-# Among depth 5, 7, 9, ntress = (1:20)*25, shrinkage = c(0.07, 0.05, 0.1)
+# Among depth 5, 7, 9, ntress = (1:20)*25, shrinkage = c(0.07, 0.05, 0.1)  BEST
 # n.trees = 200
 # interaction.depth = 9
 # shrinkage = 0.05
 # ROC: 0.8987161
 # Accuracy: 0.8470231
 # Kappa: 0.5467440
-# 0.9166074
+# Sens: 0.9166074
 
 
 pred <- predict(gbm, newdata = testing, type = "prob")
@@ -721,8 +731,9 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ## Ridge/Lasso regression -- GLMNET
 library(caret)
+## Note that x for train needs to be a matrix, otherwise code won't run. 
 set.seed(80)
-glmnet <- train(training[complete.cases(training),c(1:198, 203)],
+glmnet <- train(data.matrix(training[complete.cases(training),c(1:198, 201, 203)]),
                 training[complete.cases(training), 199],
                     method = "glmnet",
                     metric = "ROC",
@@ -730,9 +741,10 @@ glmnet <- train(training[complete.cases(training),c(1:198, 203)],
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.alpha = c(0.05, 0.025),
-                                           .lambda = c(0.001, 0.0005, 0.0001)))
+                    tuneGrid = expand.grid(.alpha = 1,
+                                           .lambda = c(1e-05, 1e-06, 1e-07)))
 glmnet
+varImp(glmnet)
 plot(glmnet)
 plot(glmnet, metric = "Sensitivity")
 # alpha = c(0, 0.05, 1),
@@ -880,7 +892,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ############################################################################
 # COMPARING THE PERFORMANCES OF DIFFERENT MODELS
-compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GLMNET = glmnet, NeuralNetwork = NN))
+compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, randomForest_RFE = RF_RFE_1000, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GLMNET = glmnet, NeuralNetwork = NN))
 summary(compare_perf)
 splom(compare_perf, metric = "ROC")
 parallelplot(compare_perf, metric = "ROC")
