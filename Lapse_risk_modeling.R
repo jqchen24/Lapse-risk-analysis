@@ -32,6 +32,9 @@ table(accounts$Customer_Size)
 table(accounts$CONTRACT_FLAG)
 table(accounts$mro_decile)
 table(accounts$indseg0)
+### return the variables that have missing values
+sort(colSums(is.na(accounts)), decreasing = T)
+
 
 # 22.7% accounts lapsed in the data.
 table(accounts$churn)/nrow(accounts)
@@ -281,7 +284,7 @@ RF_RFE_1000
 varImp(RF_RFE_1000)
 ggplot(RF_RFE_1000)
 plot(varImp(RF_RFE_1000), top = 20)
-# mtry = c(2, 3, 4) ntree = 1000   BEST
+# mtry = c(2, 3, 4) ntree = 1000
 # Best mtry = 4
 # ROC: 0.8959951
 # Accuracy: 0.8467142
@@ -302,7 +305,7 @@ plot(varImp(RF_RFE_1000), top = 20)
 # Kappa: 0.5335432
 # Sens: 0.9239116
 
-# mtry = c(14, 16, 18) ntree = 1000, including sellertype
+# mtry = c(14, 16, 18) ntree = 1000, including sellertype       BEST
 # best mtry = 18
 # ROC: 0.8972072
 # Accuracy: 0.8475659
@@ -643,6 +646,45 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
 ## try to reduce the increments of n.trees -- 20
 set.seed(80)
 ## automatic feature selection
+## Let gbm itself deal with missing values
+gbm_RFE_NA <- train(training[, c(1:198, 201, 203)],
+                 training[, 199],
+                 method = "gbm",
+                 metric = "ROC",
+                 trControl = trainControl(method = "cv", 
+                                          number = 5,
+                                          summaryFunction = multiClassSummary,
+                                          classProbs = TRUE),
+                 tuneGrid = expand.grid(interaction.depth = c(5, 7, 9),
+                                        n.trees = (1:30)*20,
+                                        shrinkage = c(0.07, 0.05, 0.1),
+                                        n.minobsinnode = 20))
+sink("gbm_RFE_NA.txt")
+print(gbm_RFE_NA)
+sink()
+unlink("gbm_RFE_NA.txt")
+# interaction.depth = c(5, 7, 9),
+# n.trees = (1:30)*20,
+# shrinkage = c(0.07, 0.05, 0.1)
+# Best ntrees = 180 interaction.depth = 9, shrinkage = 0.05
+# ROC: 0.8991428  
+# Accuracy: 0.8477596  
+# Kappa: 0.5493070  
+# Sens: 0.9172394    
+pred <- predict(gbm_RFE_NA, newdata = testing[, c(1:198, 201, 203)], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[, ]$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.8475
+# Kappa: 0.5502
+# Sens: 0.6157
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.9002506
+
+### Exclude missing values
+set.seed(80)
 gbm_RFE <- train(training[complete.cases(training),c(1:198, 201, 203)],
                  training[complete.cases(training), 199],
              method = "gbm",
@@ -659,7 +701,6 @@ gbm_RFE <- train(training[complete.cases(training),c(1:198, 201, 203)],
 sink("gbm_RFE.txt")
 print(gbm_RFE)
 sink()
-unlink("gbm_RFE.txt")
 plot(varImp(gbm_RFE), top = 20)
 ggplot(gbm_RFE)
 # interaction.depth = c(5, 7, 9),
@@ -762,10 +803,12 @@ glmnet_RFE <- train(data.matrix(training[complete.cases(training),c(1:198, 201)]
                                              classProbs = TRUE),
                     tuneGrid = expand.grid(.alpha = seq(0, 1, 0.05),
                                            .lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)))
-glmnet
-varImp(glmnet)
-plot(glmnet)
-plot(glmnet, metric = "Sensitivity")
+glmnet_RFE
+ggplot(glmnet_RFE)
+ggplot(varImp(glmnet_RFE), top = 20)
+ggplot(glmnet_RFE, metric = "ROC") + theme(legend.position = "bottom")
+ggplot(glmnet_RFE, metric = "Accuracy")
+ggplot(glmnet_RFE, metric = "Sensitivity")
 
 # alpha = seq(0, 1, 0.05),
 # lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)
@@ -942,7 +985,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ############################################################################
 # COMPARING THE PERFORMANCES OF DIFFERENT MODELS
-compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, randomForest_RFE = RF_RFE_1000, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GLMNET = glmnet, NeuralNetwork = NN))
+compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, randomForest_RFE = RF_RFE_1000, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GBM_RFE = gbm_RFE, GLMNET = glmnet, GLMNET_RFE = glmnet_RFE, NeuralNetwork = NN))
 summary(compare_perf)
 splom(compare_perf, metric = "ROC")
 parallelplot(compare_perf, metric = "ROC")
