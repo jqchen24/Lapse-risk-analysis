@@ -280,7 +280,7 @@ RF_RFE_1000 <- train(training[complete.cases(training),c(1:198, 201, 203)],
 RF_RFE_1000
 varImp(RF_RFE_1000)
 ggplot(RF_RFE_1000)
-
+plot(varImp(RF_RFE_1000), top = 20)
 # mtry = c(2, 3, 4) ntree = 1000   BEST
 # Best mtry = 4
 # ROC: 0.8959951
@@ -403,31 +403,6 @@ set.seed(80)
 ##################################################################################
 ## RFE feature selection  -- doesn't work
 ##################################################################################
-set.seed(80)
-caretFuncs$summary <- multiClassSummary
-logReg <- rfe(churn ~ .,
-              data = training[is.na(training$DISTANCE) != T,], 
-                      method = "glm", 
-                      metric = "ROC",
-                      rfeControl = rfeControl(method = "cv", 
-                                               number = 5,
-                                               functions = caretFuncs),
-                    trControl = trainControl(classProbs = TRUE,
-                                             summaryFunction = multiClassSummary),
-                      family = binomial)
-##############################
-## stepwise feature selection
-##############################
-set.seed(80)
-logReg_caret <- train(training[complete.cases(training),c(1:198, 203)],
-                      training[complete.cases(training), 199],
-                      method = "glmStepAIC", 
-                      metric = "ROC",
-                      trControl = trainControl(method = "cv", 
-                                               number = 5,
-                                               summaryFunction = multiClassSummary,
-                                               classProbs = TRUE),
-                      family = binomial)
 
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
@@ -667,6 +642,49 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
 ## Note: can try to reduce # of trees, lower shrinkage. 
 ## try to reduce the increments of n.trees -- 20
 set.seed(80)
+## automatic feature selection
+gbm_RFE <- train(training[complete.cases(training),c(1:198, 201, 203)],
+                 training[complete.cases(training), 199],
+             method = "gbm",
+             metric = "ROC",
+             trControl = trainControl(method = "cv", 
+                                      number = 5,
+                                      summaryFunction = multiClassSummary,
+                                      classProbs = TRUE),
+             tuneGrid = expand.grid(interaction.depth = c(5, 7, 9),
+                                    n.trees = (1:30)*20,
+                                    shrinkage = c(0.07, 0.05, 0.1),
+                                    n.minobsinnode = 20))
+## Save output to txt file.
+sink("gbm_RFE.txt")
+print(gbm_RFE)
+sink()
+unlink("gbm_RFE.txt")
+plot(varImp(gbm_RFE), top = 20)
+ggplot(gbm_RFE)
+# interaction.depth = c(5, 7, 9),
+# n.trees = (1:30)*20,
+# shrinkage = c(0.07, 0.05, 0.1),
+# n.minobsinnode = 20))
+# BEST ntrees = 280, depth = 9, shrinkage = 0.05
+# ROC: 0.8992695  
+# Accuracy: 0.8486762  
+# Kappa: 0.5451691  
+# Sens: 0.9192503   
+pred <- predict(gbm_RFE, newdata = testing[complete.cases(testing),c(1:198, 201, 203)], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing[complete.cases(testing), ]$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.8488
+# Kappa: 0.5466
+# Sens: 0.6068
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.9002506
+
+
+
 gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                     data = training[is.na(training$DISTANCE) != T,],
@@ -677,7 +695,7 @@ gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
                     tuneGrid = expand.grid(interaction.depth = c(5, 7, 9),
-                                           n.trees = (1:20)*25,
+                                           n.trees = (1:25)*20,
                                            shrinkage = c(0.07, 0.05, 0.1),
                                            n.minobsinnode = 20))
 gbm
@@ -733,7 +751,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 library(caret)
 ## Note that x for train needs to be a matrix, otherwise code won't run. 
 set.seed(80)
-glmnet <- train(data.matrix(training[complete.cases(training),c(1:198, 201, 203)]),
+glmnet <- train(data.matrix(training[complete.cases(training),c(1:198, 201)]),
                 training[complete.cases(training), 199],
                     method = "glmnet",
                     metric = "ROC",
@@ -741,8 +759,8 @@ glmnet <- train(data.matrix(training[complete.cases(training),c(1:198, 201, 203)
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.alpha = 1,
-                                           .lambda = c(1e-05, 1e-06, 1e-07)))
+                    tuneGrid = expand.grid(.alpha = seq(0, 1, 0.05),
+                                           .lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)))
 glmnet
 varImp(glmnet)
 plot(glmnet)
