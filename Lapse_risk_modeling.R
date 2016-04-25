@@ -751,7 +751,8 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 library(caret)
 ## Note that x for train needs to be a matrix, otherwise code won't run. 
 set.seed(80)
-glmnet <- train(data.matrix(training[complete.cases(training),c(1:198, 201)]),
+### Automatic feature selection
+glmnet_RFE <- train(data.matrix(training[complete.cases(training),c(1:198, 201)]),
                 training[complete.cases(training), 199],
                     method = "glmnet",
                     metric = "ROC",
@@ -765,6 +766,28 @@ glmnet
 varImp(glmnet)
 plot(glmnet)
 plot(glmnet, metric = "Sensitivity")
+
+# alpha = seq(0, 1, 0.05),
+# lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)
+# Best alpha = 1 and lambda = 2e-05
+# ROC: 0.8921677
+# Accuracy: 0.8430034
+# Kappa: 0.5300179
+# Sens: 0.9140406
+
+set.seed(80)
+glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
+                  sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                data = training[is.na(training$DISTANCE) != T,],
+                    method = "glmnet",
+                    metric = "ROC",
+                    trControl = trainControl(method = "cv", 
+                                             number = 5,
+                                             summaryFunction = multiClassSummary,
+                                             classProbs = TRUE),
+                    tuneGrid = expand.grid(.alpha = seq(0, 1, 0.05),
+                                           .lambda = c(0.0001, 0.0005, 0.001, 0.005)))
+### manual feature selection
 # alpha = c(0, 0.05, 1),
 # lambda = c(0.01, 0.1)
 # Best alpha = 0.05 and lambda = 0.01
@@ -791,20 +814,29 @@ plot(glmnet, metric = "Sensitivity")
 
 # alpha = c(0.05, 0.025),   
 # lambda = c(0.001, 0.0005, 0.0001)
-# best alpha = 0.05 and lambda = 1e-04   best
+# best alpha = 0.05 and lambda = 1e-04   
 # ROC: 0.8943337
 # Accuracy: 0.8446734
 # Kappa: 0.5281125
 # Sens: 0.9249729
+
+# alpha = seq(0, 1, 0.05)          BEST
+# lambda = c(0.0001, 0.0005, 0.001, 0.005)
+# best alpha = 1 and lambda = 1e-04
+# ROC: 0.8954814
+# Accuracy: 0.8448620
+# Kappa: 0.5295136
+# Sens: 0.9244102
+
 pred <- predict(glmnet, newdata = testing, type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
-# Accuracy: 0.8452
-# Kappa: 0.5299
-# Sens: 0.5723
+# Accuracy: 0.8453
+# Kappa: 0.5313
+# Sens: 0.5750
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8952311
+# AUC: 0.8962534
 
 ############################################################################
 ############################################################################
