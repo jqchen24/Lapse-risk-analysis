@@ -13,6 +13,8 @@ accounts$Customer_Size <- as.factor(accounts$Customer_Size)
 accounts$DUNSSBUS <- NULL
 accounts$DUNSPUBL <- NULL
 accounts$contract_group <- NULL
+accounts$sales_current <- accounts$sales_201508
+accounts$sales_201508 <- NULL
 accounts$sales_201509 <- NULL
 accounts$sales_201510 <- NULL
 accounts$sales_201511 <- NULL
@@ -247,30 +249,11 @@ table(testing$churn)/nrow(testing)
 #             tuneGrid = expand.grid(mtry = 2),
 #             do.trace = T)
 # RF
-set.seed(80)
-## Tune mtry
-RF_tuning <- train(training[is.na(training$DISTANCE) != T, c("DISTANCE", "RECENCY", "TENURE", "RET_T12", "TRANS12X", "TRANS24X", "LINES12X", "indseg1",
-                                                            "sellertype", "EPEDN12X", "trans_3month", "EBUN12X",
-                                                            "Customer_Size", "Corp_Maj_Flag", "SOW", "dunsstat")], 
-                  training[is.na(training$DISTANCE) != T,]$churn,
-                  # nodesize = 1, 
-                  ntree = 500,
-                  method = "rf", 
-                  metric = "ROC",
-                  trControl = trainControl(method = "cv", 
-                                           number = 5,
-                                           summaryFunction = multiClassSummary,
-                                           classProbs = TRUE),
-                  # tuneGrid = expand.grid(mtry = c(2, 3, 4)),
-                  tuneLength = 5,
-                  do.trace = T) 
-RF_tuning
-ggplot(RF_tuning)
-## Use mtry = 2.
+
 ## Automatic feature selection by RF.
 set.seed(80)
-RF_RFE_1000 <- train(training[complete.cases(training),c(1:198, 201, 203)],
-                training[complete.cases(training), 199],
+RF_RFE_1000 <- train(training[complete.cases(training),c(1:197, 200, 202, 203)],
+                training[complete.cases(training), 198],
                 ntree = 1000,
                 method = "rf", 
                 metric = "ROC",
@@ -307,22 +290,22 @@ plot(varImp(RF_RFE_1000), top = 20)
 
 # mtry = c(14, 16, 18) ntree = 1000, including sellertype       BEST
 # best mtry = 18
-# ROC: 0.8972072
-# Accuracy: 0.8475659
-# Kappa: 0.5358697
-# Sens: 0.9235198
+# ROC: 0.8972970
+# Accuracy: 0.8468511
+# Kappa: 0.5336724
+# Sens: 0.9230694
 
-pred <- predict(RF_RFE_1000, newdata = testing[complete.cases(testing),c(1:198, 201, 203)], 
+pred <- predict(RF_RFE_1000, newdata = testing[complete.cases(testing),c(1:197, 200, 202, 203)], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[complete.cases(testing), ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8477  
-# Kappa: 0.5378
-# Sens: 0.5880
+# Accuracy: 0.8481  
+# Kappa: 0.5387
+# Sens: 0.5883
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8985856
+# AUC value = 0.8985337
 
 
 set.seed(80)
@@ -647,8 +630,8 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
 set.seed(80)
 ## automatic feature selection
 ## Let gbm itself deal with missing values
-gbm_RFE_NA <- train(training[, c(1:198, 201, 203)],
-                 training[, 199],
+gbm_RFE_NA <- train(training[, c(1:197, 200, 202, 203)],
+                 training[, 198],
                  method = "gbm",
                  metric = "ROC",
                  trControl = trainControl(method = "cv", 
@@ -659,6 +642,9 @@ gbm_RFE_NA <- train(training[, c(1:198, 201, 203)],
                                         n.trees = (1:30)*20,
                                         shrinkage = c(0.07, 0.05, 0.1),
                                         n.minobsinnode = 20))
+gbm_RFE_NA
+ggplot(gbm_RFE_NA) + theme(legend.position = "bottom")
+ggplot(varImp(gbm_RFE_NA), top = 20)
 sink("gbm_RFE_NA.txt")
 print(gbm_RFE_NA)
 sink()
@@ -671,7 +657,7 @@ unlink("gbm_RFE_NA.txt")
 # Accuracy: 0.8477596  
 # Kappa: 0.5493070  
 # Sens: 0.9172394    
-pred <- predict(gbm_RFE_NA, newdata = testing[, c(1:198, 201, 203)], 
+pred <- predict(gbm_RFE_NA, newdata = testing[, c(1:197, 200, 202, 203)], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[, ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
@@ -679,14 +665,14 @@ confusionMatrix(pred[, 2] >= 0.5, testing[, ]$churn == "Yes", positive = "TRUE")
 # Kappa: 0.5502
 # Sens: 0.6157
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
+ROCRpred <- prediction(pred[,2], testing[, ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.9002506
+# AUC value = 0.9000873
 
 ### Exclude missing values
 set.seed(80)
-gbm_RFE <- train(training[complete.cases(training),c(1:198, 201, 203)],
-                 training[complete.cases(training), 199],
+gbm_RFE <- train(training[complete.cases(training),c(1:197, 200, 202, 203)],
+                 training[complete.cases(training), 198],
              method = "gbm",
              metric = "ROC",
              trControl = trainControl(method = "cv", 
@@ -712,7 +698,7 @@ ggplot(gbm_RFE)
 # Accuracy: 0.8486762  
 # Kappa: 0.5451691  
 # Sens: 0.9192503   
-pred <- predict(gbm_RFE, newdata = testing[complete.cases(testing),c(1:198, 201, 203)], 
+pred <- predict(gbm_RFE, newdata = testing[complete.cases(testing),c(1:197, 200, 202, 203)], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing[complete.cases(testing), ]$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
@@ -793,7 +779,7 @@ library(caret)
 ## Note that x for train needs to be a matrix, otherwise code won't run. 
 set.seed(80)
 ### Automatic feature selection
-glmnet_RFE <- train(data.matrix(training[complete.cases(training),c(1:198, 201)]),
+glmnet_RFE <- train(data.matrix(training[complete.cases(training),c(1:197, 200, 202, 203)]),
                 training[complete.cases(training), 199],
                     method = "glmnet",
                     metric = "ROC",
@@ -985,7 +971,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ############################################################################
 ############################################################################
 # COMPARING THE PERFORMANCES OF DIFFERENT MODELS
-compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, randomForest_RFE = RF_RFE_1000, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GBM_RFE = gbm_RFE, GLMNET = glmnet, GLMNET_RFE = glmnet_RFE, NeuralNetwork = NN))
+compare_perf <- resamples(list(LogReg = logReg_caret, randomForest = RF, randomForest_RFE = RF_RFE_1000, K_Nearest = KNN, SVM = SVM_linear, GBM = gbm, GBM_RFE_NA = gbm_RFE_NA, GLMNET = glmnet, GLMNET_RFE = glmnet_RFE, NeuralNetwork = NN))
 summary(compare_perf)
 splom(compare_perf, metric = "ROC")
 parallelplot(compare_perf, metric = "ROC")
@@ -997,3 +983,23 @@ rocDiffs <- diff(compare_perf, metric = "ROC")
 summary(rocDiffs)
 dotplot(rocDiffs, metric = "ROC")
 bwplot(compare_perf, metric = "ROC")
+
+
+
+#############################################################################
+#############################################################################
+## Test data on 201510 data
+testing_201510 <- read.csv("test_201510.csv", stringsAsFactors = F)
+testing_201510$account <- NULL
+testing_201510$CONTRACT_FLAG <- as.factor(testing_201510$CONTRACT_FLAG)
+testing_201510$churn <- as.factor(testing_201510$churn)
+testing_201510$indseg1 <- as.factor(testing_201510$indseg1)
+testing_201510$Corp_Maj_Flag <- as.factor(testing_201510$Corp_Maj_Flag)
+testing_201510$dunsstat <- as.factor(testing_201510$dunsstat)
+testing_201510$Customer_Size <- as.factor(testing_201510$Customer_Size)
+testing_201510$DUNSSBUS <- NULL
+testing_201510$DUNSPUBL <- NULL
+testing_201510$contract_group <- NULL
+names(testing_201510)
+### return the variables that have missing values
+sort(colSums(is.na(testing_201510)), decreasing = T)
