@@ -1043,3 +1043,17 @@ library(ROCR)
 ROCRpred <- prediction(pred[,2], testing_201510[complete.cases(testing_201510), ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC value = 0.8935886
+
+#############################################################################
+## Use gbm_RFE_NA to make predictions
+pred <- predict(gbm_RFE_NA, newdata = testing_201510[, c(1:197, 200, 202, 203)], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing_201510[, ]$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.839
+# Kappa: 0.5124
+# Sens: 0.5393
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing_201510[, ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.8945363
