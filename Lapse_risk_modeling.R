@@ -264,7 +264,7 @@ RF_RFE_1000 <- train(training[complete.cases(training),c(1:197, 200, 202, 203)],
                 tuneGrid = expand.grid(mtry = c(14, 16, 18)),
                 do.trace = T)
 RF_RFE_1000
-varImp(RF_RFE_1000)
+ggplot(varImp(RF_RFE_1000), top = 20)
 ggplot(RF_RFE_1000)
 plot(varImp(RF_RFE_1000), top = 20)
 # mtry = c(2, 3, 4) ntree = 1000
@@ -990,7 +990,7 @@ bwplot(compare_perf, metric = "ROC")
 #############################################################################
 ## Test data on 201510 data
 testing_201510 <- read.csv("test_201510.csv", stringsAsFactors = F)
-testing_201510$account <- NULL
+testing_201510$ï..account <- NULL
 testing_201510$CONTRACT_FLAG <- as.factor(testing_201510$CONTRACT_FLAG)
 testing_201510$churn <- as.factor(testing_201510$churn)
 testing_201510$indseg1 <- as.factor(testing_201510$indseg1)
@@ -1000,6 +1000,46 @@ testing_201510$Customer_Size <- as.factor(testing_201510$Customer_Size)
 testing_201510$DUNSSBUS <- NULL
 testing_201510$DUNSPUBL <- NULL
 testing_201510$contract_group <- NULL
+testing_201510$sales_201511 <- NULL
+testing_201510$sales_201512 <- NULL
+testing_201510$sales_201601 <- NULL
+testing_201510$sales_current <- testing_201510$sales_201510
+testing_201510$sales_201510 <- NULL
 names(testing_201510)
 ### return the variables that have missing values
 sort(colSums(is.na(testing_201510)), decreasing = T)
+### Feature engineering
+library(dplyr)
+# WA_S12X ranges from -206700 to large number, hard to get any sense out of it.
+testing_201510 <- mutate(testing_201510, discount = (WA_S12X - (SALES12X - FINDS12X))/WA_S12X)
+testing_201510 <- mutate(testing_201510, sellertype = CSG %/% 10000)
+testing_201510$CSG <- NULL
+testing_201510$sellertype <- as.factor(testing_201510$sellertype)
+testing_201510 <- mutate(testing_201510, distance_far = (DISTANCE >= 5))
+testing_201510 <- mutate(testing_201510, SOW = SALES12X/mrospend)
+# INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
+testing_201510 <- mutate(testing_201510, trans_3month = TRANS01 + TRANS02 + TRANS03)
+### reorder variables to align with model
+testing_201510 <- testing_201510[, c(1:191, 193:197, 192, 198, 200:203, 199)]
+
+levels(testing_201510$churn) <- c("No", "Yes")
+levels(testing_201510$indseg1) <- levels(accounts$indseg1)
+levels(testing_201510$sellertype) <- levels(accounts$sellertype)
+levels(testing_201510$dunsstat) <- levels(accounts$dunsstat)
+levels(testing_201510$Customer_Size) <- levels(accounts$Customer_Size)
+levels(testing_201510$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
+
+#############################################################################
+## Use RF_RFE_1000 to make predictions
+## exclude missing values
+pred <- predict(RF_RFE_1000, newdata = testing_201510[complete.cases(testing_201510),c(1:197, 200, 202, 203)], 
+                type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing_201510[complete.cases(testing_201510), ]$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.84  
+# Kappa: 0.5084
+# Sens: 0.5318
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing_201510[complete.cases(testing_201510), ]$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.8935886
