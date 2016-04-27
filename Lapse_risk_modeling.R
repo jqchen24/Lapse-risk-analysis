@@ -21,10 +21,17 @@ accounts$sales_201511 <- NULL
 
 # Create some scatter plots
 library(ggplot2)
-ggplot(accounts, aes(x = TRANS12X, y = TENURE, color = churn)) + geom_point()
+
+## MISSING VALUES WITH DISTANCE and contact count
+summary(accounts$DISTANCE)
+summary(accounts$contact_count)
+ggplot(accounts, aes(x = DISTANCE)) + geom_histogram(binwidth = 50)
+accounts[is.na(accounts$DISTANCE), ]$DISTANCE <- median(accounts$DISTANCE, na.rm = T)
+accounts[is.na(accounts$contact_count), ]$contact_count <- 0
 
 # Create some histograms
 library(ggplot2)
+ggplot(accounts, aes(x = TRANS12X, y = TENURE, color = churn)) + geom_point()
 ggplot(accounts, aes(RECENCY)) + geom_bar()
 ggplot(accounts, aes(TENURE)) + geom_bar()
 
@@ -252,8 +259,8 @@ table(testing$churn)/nrow(testing)
 
 ## Automatic feature selection by RF.
 set.seed(80)
-RF_RFE_1000 <- train(training[complete.cases(training),c(1:197, 200, 202, 203)],
-                training[complete.cases(training), 198],
+RF_RFE_1000 <- train(training[, c(1:197, 199, 201, 203)],
+                training[, 198],
                 ntree = 1000,
                 method = "rf", 
                 metric = "ROC",
@@ -295,17 +302,26 @@ plot(varImp(RF_RFE_1000), top = 20)
 # Kappa: 0.5336724
 # Sens: 0.9230694
 
-pred <- predict(RF_RFE_1000, newdata = testing[complete.cases(testing),c(1:197, 200, 202, 203)], 
+# mtry = c(14, 16, 18) ntree = 1000 replace NA in distance as median, recode missing value
+# in contact_count to 0.
+# best mtry = 16
+# ROC: 0.8971984
+# Accuracy: 0.8457963
+# Kappa: 0.5366113
+# Sens: 0.9219089
+
+
+pred <- predict(RF_RFE_1000, newdata = testing[,c(1:197, 199, 201, 203)], 
                 type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing[complete.cases(testing), ]$churn == "Yes", positive = "TRUE")
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8481  
-# Kappa: 0.5387
-# Sens: 0.5883
+# Accuracy: 0.8466 
+# Kappa: 0.5403
+# Sens: 0.5923
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
+ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8985337
+# AUC value = 0.8983736
 
 
 set.seed(80)
@@ -629,9 +645,8 @@ SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) +
 ## try to reduce the increments of n.trees -- 20
 set.seed(80)
 ## automatic feature selection
-## Let gbm itself deal with missing values
-gbm_RFE_NA <- train(training[, c(1:197, 200, 202, 203)],
-                 training[, 198],
+gbm_RFE_NA <- train(training[, c(1:197, 199, 201, 203)],
+                    training[, 198],
                  method = "gbm",
                  metric = "ROC",
                  trControl = trainControl(method = "cv", 
@@ -656,18 +671,27 @@ unlink("gbm_RFE_NA.txt")
 # ROC: 0.8991428  
 # Accuracy: 0.8477596  
 # Kappa: 0.5493070  
-# Sens: 0.9172394    
-pred <- predict(gbm_RFE_NA, newdata = testing[, c(1:197, 200, 202, 203)], 
+# Sens: 0.9172394 
+
+## after the missing values in distance and contact_count have been taken care of,
+# best ntrees = 340, interaction depth = 7, shrinkage = 0.05
+# ROC: 0.8991958  
+# Accuracy: 0.8477163  
+# Kappa: 0.5479150  
+# Sens: 0.9183227  
+
+
+pred <- predict(gbm_RFE_NA, newdata = testing[, c(1:197, 199, 201, 203)], 
                 type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing[, ]$churn == "Yes", positive = "TRUE")
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.8475
-# Kappa: 0.5502
-# Sens: 0.6157
+# Accuracy: 0.8478
+# Kappa: 0.5495
+# Sens: 0.6118
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing[, ]$churn)
+ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.9000873
+# AUC value = 0.9000721
 
 ### Exclude missing values
 set.seed(80)
@@ -710,8 +734,7 @@ ROCRpred <- prediction(pred[,2], testing[complete.cases(testing), ]$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC value = 0.9002506
 
-
-
+## Manually select features.
 gbm <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                     data = training[is.na(training$DISTANCE) != T,],
