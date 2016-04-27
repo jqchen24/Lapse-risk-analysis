@@ -408,7 +408,7 @@ set.seed(80)
 
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
+                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag + contact_count, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -473,6 +473,7 @@ NB
 ############################################################################
 ############################################################################
 ## K Nearesting Neighbors
+### Haven't been updated after taking care of the missing values.
 library(caret)
 set.seed(80)
 KNN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
@@ -513,12 +514,9 @@ set.seed(80)
 # Use the formula interface which will create dummy variables and that seems to be 
 # required by SVM.
 
-####
-# Need to test whether excluding the cases where distance is null makes any difference.
-####
 SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                       sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
-                    data = training[is.na(training$DISTANCE) != T,],
+                    data = training,
                     method = "svmLinear",
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
