@@ -408,7 +408,7 @@ set.seed(80)
 
 set.seed(80)
 logReg_caret <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
-                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag + contact_count, 
+                        sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                       data = training, 
                       method = "glm", 
                       metric = "ROC",
@@ -797,8 +797,8 @@ library(caret)
 ## Note that x for train needs to be a matrix, otherwise code won't run. 
 set.seed(80)
 ### Automatic feature selection
-glmnet_RFE <- train(data.matrix(training[complete.cases(training),c(1:197, 200, 202, 203)]),
-                training[complete.cases(training), 199],
+glmnet_RFE <- train(data.matrix(training[, c(1:197, 199, 201, 203)]),
+                training$churn,
                     method = "glmnet",
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
@@ -821,6 +821,15 @@ ggplot(glmnet_RFE, metric = "Sensitivity")
 # Accuracy: 0.8430034
 # Kappa: 0.5300179
 # Sens: 0.9140406
+
+## after taking care of the missing values
+# alpha = seq(0, 1, 0.05),
+# lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)
+# best alpha = 1 and lambda = 1e-05
+# ROC: 0.8916793
+# Accuracy: 0.8409459
+# Kappa: 0.5309761
+# Sens: 0.9112626
 
 set.seed(80)
 glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
@@ -876,14 +885,14 @@ glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + 
 # Sens: 0.9244102
 
 pred <- predict(glmnet, newdata = testing, type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
-# Accuracy: 0.8453
-# Kappa: 0.5313
-# Sens: 0.5750
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8451
+# Kappa: 0.5311
+# Sens: 0.5752
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8962534
+# AUC: 0.8961263
 
 ############################################################################
 ############################################################################
@@ -895,7 +904,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 set.seed(80)
 NN <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                   sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
-                data = training[is.na(training$DISTANCE) != T,],
+                data = training,
                 method = "nnet",
                 metric = "ROC",
             maxit = 500,
@@ -975,16 +984,26 @@ varImp(NN)
 # Kappa: 0.5485173
 # Sens: 0.9175640
 
+## after taking care of missing values
+# maxit = 500              
+# size = c(6, 9, 12),
+# decay = c(4, 10, 13, 15)
+# best size = 9, decay = 4
+# ROC: 0.8981794
+# Accuracy: 0.8467346
+# Kappa: 0.5465576
+# Sens: 0.9163242
+
 
 pred <- predict(NN, newdata = testing, type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
-# Accuracy: 0.8473
-# Kappa: 0.548
-# Sens: 0.6110
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8477
+# Kappa: 0.55
+# Sens: 0.6139
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8992348
+# AUC: 0.8991015
 
 ############################################################################
 ############################################################################
