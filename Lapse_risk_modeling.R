@@ -1055,6 +1055,9 @@ testing_201510$sales_201510 <- NULL
 names(testing_201510)
 ### return the variables that have missing values
 sort(colSums(is.na(testing_201510)), decreasing = T)
+testing_201510[is.na(testing_201510$DISTANCE),]$DISTANCE <- median(testing_201510$DISTANCE, na.rm = T)
+testing_201510[is.na(testing_201510$contact_count),]$contact_count <- 0
+
 ### Feature engineering
 library(dplyr)
 # WA_S12X ranges from -206700 to large number, hard to get any sense out of it.
@@ -1066,8 +1069,6 @@ testing_201510 <- mutate(testing_201510, distance_far = (DISTANCE >= 5))
 testing_201510 <- mutate(testing_201510, SOW = SALES12X/mrospend)
 # INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
 testing_201510 <- mutate(testing_201510, trans_3month = TRANS01 + TRANS02 + TRANS03)
-### reorder variables to align with model
-testing_201510 <- testing_201510[, c(1:191, 193:197, 192, 198, 200:203, 199)]
 
 levels(testing_201510$churn) <- c("No", "Yes")
 levels(testing_201510$indseg1) <- levels(accounts$indseg1)
@@ -1079,28 +1080,28 @@ levels(testing_201510$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
 #############################################################################
 ## Use RF_RFE_1000 to make predictions
 ## exclude missing values
-pred <- predict(RF_RFE_1000, newdata = testing_201510[complete.cases(testing_201510),c(1:197, 200, 202, 203)], 
+pred <- predict(RF_RFE_1000, newdata = testing_201510[,c(1:197, 199, 201, 203)], 
                 type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing_201510[complete.cases(testing_201510), ]$churn == "Yes", positive = "TRUE")
+confusionMatrix(pred[, 2] >= 0.5, testing_201510$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.84  
-# Kappa: 0.5084
-# Sens: 0.5318
+# Accuracy: 0.8392  
+# Kappa: 0.5142
+# Sens: 0.5429
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing_201510[complete.cases(testing_201510), ]$churn)
+ROCRpred <- prediction(pred[,2], testing_201510$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8935886
+# AUC value = 0.8932202
 
 #############################################################################
 ## Use gbm_RFE_NA to make predictions
-pred <- predict(gbm_RFE_NA, newdata = testing_201510[, c(1:197, 200, 202, 203)], 
+pred <- predict(gbm_RFE_NA, newdata = testing_201510[, c(1:197, 199, 201, 203)], 
                 type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing_201510[, ]$churn == "Yes", positive = "TRUE")
+confusionMatrix(pred[, 2] >= 0.5, testing_201510$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
-# Accuracy: 0.839
-# Kappa: 0.5124
-# Sens: 0.5393
+# Accuracy: 0.8393
+# Kappa: 0.5198
+# Sens: 0.5578
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing_201510[, ]$churn)
+ROCRpred <- prediction(pred[,2], testing_201510$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC value = 0.8945363
+# AUC value = 0.8946041
