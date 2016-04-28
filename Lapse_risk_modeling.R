@@ -806,7 +806,7 @@ glmnet_RFE <- train(data.matrix(training[, c(1:197, 199, 201, 203)]),
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
                     tuneGrid = expand.grid(.alpha = seq(0, 1, 0.05),
-                                           .lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)))
+                                           .lambda = c(1e-05, 2e-05, 4e-05, 1e-06, 3e-06, 5e-06, 1e-04)))
 glmnet_RFE
 ggplot(glmnet_RFE)
 ggplot(varImp(glmnet_RFE), top = 20)
@@ -824,14 +824,15 @@ ggplot(glmnet_RFE, metric = "Sensitivity")
 
 ## after taking care of the missing values
 # alpha = seq(0, 1, 0.05),
-# lambda = c(1e-05, 2e-05, 3e-05, 4e-05, 5e-05)
+# lambda = c(1e-05, 2e-05, 4e-05, 1e-06, 3e-06, 5e-06, 1e-04)
 # best alpha = 1 and lambda = 1e-05
 # ROC: 0.8916793
 # Accuracy: 0.8409459
 # Kappa: 0.5309761
 # Sens: 0.9112626
+## no difference among 1e-06, 3e-06, 5e-06, 1e-05
+ 
 
-set.seed(80)
 glmnet <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                   sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
                 data = training[is.na(training$DISTANCE) != T,],
