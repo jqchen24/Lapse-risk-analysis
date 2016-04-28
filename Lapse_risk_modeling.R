@@ -523,7 +523,7 @@ SVM_linear <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X
                                              number = 5,
                                              summaryFunction = multiClassSummary,
                                              classProbs = TRUE),
-                    tuneGrid = expand.grid(.C = c(0.003, 0.005)))
+                    tuneGrid = expand.grid(.C = c(0.001, 0.003, 0.005, 0.0005)))
 SVM_linear
 varImp(SVM_linear)
 ### Can't generate the variable importance.
@@ -607,16 +607,24 @@ coef(SVM_linear$finalModel)
 # Accuracy: 0.8368700
 # Kappa: 0.4993981
 # Sens: 0.9269048
+
+## after taking care of the missing values
+# C: 0.003
+# ROC: 0.8936316
+# Accuracy: 0.8441650
+# Kappa: 0.5231861
+# Sens: 0.9279044
+
 # Evaluate the model on test set.
 pred <- predict(SVM_linear, newdata = testing, type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing[is.na(testing$DISTANCE) != T, ]$churn == "Yes", positive = "TRUE")
-# Accuracy: 0.8441
-# Kappa: 0.5231
-# Sens: 0.5601
+confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
+# Accuracy: 0.8439
+# Kappa: 0.5227
+# Sens: 0.5595
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing[is.na(testing$DISTANCE) != T, ]$churn)
+ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
-# AUC: 0.8943726
+# AUC: 0.8942408
 set.seed(80)
 SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                    sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
