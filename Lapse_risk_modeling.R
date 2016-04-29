@@ -628,7 +628,7 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 set.seed(80)
 SVM_RBF <- train(churn ~ DISTANCE + RECENCY + TENURE + RET_T12 + log(TRANS12X) + log(TRANS24X + 1) + LINES12X  + indseg1 + 
                    sellertype + EPEDN12X + trans_3month + EBUN12X + Customer_Size + SOW + Corp_Maj_Flag, 
-                 data = training[is.na(training$DISTANCE) != T,],
+                 data = training,
                     method = "svmRadial", 
                     metric = "ROC",
                     trControl = trainControl(method = "cv", 
@@ -1105,3 +1105,31 @@ library(ROCR)
 ROCRpred <- prediction(pred[,2], testing_201510$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC value = 0.8946041
+
+#############################################################################
+## Use logReg to make predictions
+pred <- predict(logReg_caret, newdata = testing_201510, type = "prob")
+confusionMatrix(pred[, 2] >= 0.5, testing_201510$churn == "Yes", positive = "TRUE")
+## Accuracy = 0.8349
+## Kappa = 0.4863
+## Sensitivity = 0.4949
+library(ROCR)
+ROCRpred <- prediction(pred[,2], testing_201510$churn)
+as.numeric(performance(ROCRpred, "auc")@y.values)
+# AUC value = 0.8909908
+
+#############################################################################
+## Train RF on entire account dataset
+levels(accounts$churn) <- c("No", "Yes")
+set.seed(80)
+RF_RFE_1000 <- train(accounts[, c(1:197, 199, 201, 203)],
+                     accounts$churn,
+                     ntree = 1000,
+                     method = "rf", 
+                     metric = "ROC",
+                     trControl = trainControl(method = "cv", 
+                                              number = 5,
+                                              summaryFunction = multiClassSummary,
+                                              classProbs = TRUE),
+                     tuneGrid = expand.grid(mtry = c(14, 16, 18)),
+                     do.trace = T)
