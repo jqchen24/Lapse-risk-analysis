@@ -1,3 +1,16 @@
+# install.packages(c("caret", "ggplot2", "pROC", "ROCR", "e1071", "randomForest", "dplyr"))
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(ROCR)
+library(foreign)
+
+######## Need to deal with sellertype next time building the model. 
+######## Look up CSG in future alignment.
+######## Remove industry "other" from data.
+
+#### Need to re-train RF model because in training data discount has Inf values and missing values.
+
 ##########################################
 # Load the dataset and remove account # #
 ##########################################
@@ -9,7 +22,11 @@ accounts$churn <- as.factor(accounts$churn)
 accounts$indseg1 <- as.factor(accounts$indseg1)
 accounts$Corp_Maj_Flag <- as.factor(accounts$Corp_Maj_Flag)
 accounts$dunsstat <- as.factor(accounts$dunsstat)
+### this hasn't been saved. So INVSOLFLG in accounts is still integer.
+accounts$INVSOLFLG <- as.factor(accounts$INVSOLFLG)
 accounts$Customer_Size <- as.factor(accounts$Customer_Size)
+### Newly added, haven't saved. So mro_decile in accounts is still integer.
+accounts$mro_decile <- as.factor(accounts$mro_decile)
 accounts$DUNSSBUS <- NULL
 accounts$DUNSPUBL <- NULL
 accounts$contract_group <- NULL
@@ -18,6 +35,7 @@ accounts$sales_201508 <- NULL
 accounts$sales_201509 <- NULL
 accounts$sales_201510 <- NULL
 accounts$sales_201511 <- NULL
+
 
 # Create some scatter plots
 library(ggplot2)
@@ -29,11 +47,99 @@ ggplot(accounts, aes(x = DISTANCE)) + geom_histogram(binwidth = 50)
 accounts[is.na(accounts$DISTANCE), ]$DISTANCE <- median(accounts$DISTANCE, na.rm = T)
 accounts[is.na(accounts$contact_count), ]$contact_count <- 0
 
-# Create some histograms
+# Create some visuals
 library(ggplot2)
-ggplot(accounts, aes(x = TRANS12X, y = TENURE, color = churn)) + geom_point()
+ggplot(accounts, aes(x = TRANS12X, y = churn)) + geom_point()
+ggplot(accounts, aes(x = TENURE, y = churn)) + geom_point()
+ggplot(accounts, aes(x = RECENCY, y = churn)) + geom_point()
+ggplot(accounts, aes(x = TRANS12X, y = TENURE, color = churn)) + geom_point() + theme(legend.position = "bottom")
+ggplot(accounts, aes(x = TRANS12X, y = RECENCY, color = churn)) + geom_point()
+ggplot(accounts, aes(x = LINES12X, y = RECENCY, color = churn)) + geom_point()
 ggplot(accounts, aes(RECENCY)) + geom_bar()
 ggplot(accounts, aes(TENURE)) + geom_bar()
+ggplot(accounts, aes(x = TENURE)) + geom_histogram(aes(fill = churn))
+ggplot(accounts, aes(x = RECENCY)) + geom_histogram(aes(fill = churn))
+ggplot(accounts, aes(x = TRANS12X)) + geom_histogram(aes(fill = churn)) + xlim(0, 500)
+ggplot(accounts, aes(x = LINES12X)) + geom_histogram(aes(fill = churn))
+ggplot(accounts, aes(x = RECENCY)) + geom_histogram(aes(fill = churn))
+ggplot(accounts, aes(x = DISTANCE)) + geom_histogram(aes(fill = churn))
+ggplot(accounts, aes(x = RECENCY)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = LINES12X)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = TENURE)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = TRANS12X)) + geom_bar(aes(fill = churn)) + xlim(0, 200)
+ggplot(accounts, aes(x = abs(SOW))) + geom_histogram(aes(fill = churn)) + xlab("SOW")
+ggplot(accounts, aes(x = RECENCY, color = churn, fill = churn)) + geom_density()
+ggplot(accounts, aes(x = TENURE, color = churn, fill = churn)) + geom_density()
+ggplot(accounts, aes(x = LINES12X, color = churn)) + geom_density()
+ggplot(accounts, aes(x = TRANS12X, color = churn)) + geom_density()
+## two categorical variables
+accounts <- mutate(accounts, industry = ifelse(indseg1 == 0, "International/export",
+                                                           ifelse(indseg1 == 1, "Government",
+                                                                  ifelse(indseg1 == 2, "Healthcare",
+                                                                         ifelse(indseg1 == 3, "Heavy MFG",
+                                                                                ifelse(indseg1 == 4, "Light MFG",
+                                                                                       ifelse(indseg1 == 5, "Hospitality",
+                                                                                              ifelse(indseg1 == 6, "Commercial Services",
+                                                                                                     ifelse(indseg1 == 7, "Retail",
+                                                                                                            ifelse(indseg1 == 8, "Wholesale",
+                                                                                                                   ifelse(indseg1 == 9, "Transportation",
+                                                                                                                          ifelse(indseg1 == 10, "Contractors",
+                                                                                                                                 ifelse(indseg1 == 11, "Property Mgt",
+                                                                                                                                        ifelse(indseg1 == 12, "Natural resources", 
+                                                                                                                                               ifelse(indseg1 == 13, "Resellers", "Other")))))))))))))))
+accounts <- mutate(accounts, coverage = ifelse(sellertype == 83, "TSR", 
+                                             ifelse(sellertype %in% c(84, 88), "AM",
+                                                    ifelse(sellertype == 86, "TSA", 
+                                                           ifelse(sellertype == 89, "Government ARM", "Not covered")))))
+ggplot(accounts, aes(x = industry)) + geom_bar(aes(fill = churn)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+accounts <- mutate(accounts, contract_type = ifelse(Corp_Maj_Flag == "C", "National Accts",
+                                                                ifelse(Corp_Maj_Flag == "G", "Government GPO",
+                                                                       ifelse(Corp_Maj_Flag == "H", "Healthcare GPO",
+                                                                              ifelse(Corp_Maj_Flag == "M", "National Accts",
+                                                                                     ifelse(Corp_Maj_Flag == "N", "Local Contracts",
+                                                                                            ifelse(Corp_Maj_Flag == "P", "Commercial GPO",
+                                                                                                   ifelse(Corp_Maj_Flag == "S", "Select Advantage",
+                                                                                                          ifelse(Corp_Maj_Flag == "X", "Non-contract Local", "")))))))))
+accounts$contract_type <- as.factor(accounts$contract_type)
+ggplot(accounts, aes(x = CONTRACT_FLAG)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = contract_type)) + geom_bar(aes(fill = churn)) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(accounts, aes(x = Customer_Size)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = Corp_Maj_Flag)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = sellertype)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = INVSOLFLG)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = multisite)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = mro_decile)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = SOW)) + geom_bar(aes(fill = churn))
+ggplot(accounts, aes(x = mro_decile, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = TENURE, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = industry, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_x_discrete(limits=c("International/export","Government","Healthcare", "Heavy MFG", "Light MFG", "Hospitality", "Commercial Services", "Retail", "Wholesale", "Transportation", "Contractors", "Property Mgt", "Natural resources", "Resellers"))
+ggplot(accounts, aes(x = CONTRACT_FLAG, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = contract_type, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(accounts, aes(x = INVSOLFLG, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + xlab("KeepStock")
+ggplot(accounts, aes(x = sellertype, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = LINES12X, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = RECENCY, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = SOW, fill = churn)) + geom_histogram(position = "fill") + ylab("% of accounts") + xlim(c(0, max(accounts$SOW)))
+accounts <- mutate(accounts, SOW_range = ifelse(SOW < 0, "0",
+                                                ifelse(SOW < 0.2, "20%",
+                                                       ifelse(SOW < 0.4, "40%",
+                                                              ifelse(SOW < 0.6, "60%",
+                                                                     ifelse(SOW < 0.8, "80%", "100%"))))))
+accounts$SOW_range <- as.factor(accounts$SOW_range)
+ggplot(accounts, aes(x = SOW_range, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + scale_x_discrete(limits=c("0","20%","40%", "60%", "80%", "100%"))
+## using different colors.
+ggplot(accounts, aes(discount)) + geom_histogram() + xlim(c(0, 1))
+ggplot(accounts, aes(x = discount, fill = churn)) + geom_histogram(position = "fill") + ylab("% of accounts") + xlim(c(0, 1))
+ggplot(accounts, aes(x = coverage, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts, aes(x = TRANS12X, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + xlim(c(0,100))
+ggplot(accounts, aes(x = GP24X, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + xlim(c(0, 100))
+accounts <- mutate(accounts, distance_range = ifelse(DISTANCE < 2, "< 2",
+                                                     ifelse(DISTANCE < 5, "< 5",
+                                                            ifelse(DISTANCE < 10, "< 10",
+                                                                   ifelse(DISTANCE < 15, "< 15", "> 15")))))
+accounts$distance_range <- as.factor(accounts$distance_range)
+ggplot(accounts, aes(x = distance_range, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + scale_x_discrete(limits = c("< 2", "< 5", "< 10", "< 15", "> 15"))
+ggplot(accounts, aes(x = CONTACTS, fill = churn)) + geom_bar(position = "fill") + ylab("% of accounts") + xlim(c(0, 100))
 
 # Some EDA
 names(accounts)
@@ -80,6 +186,10 @@ accounts <- mutate(accounts, distance_far = (DISTANCE >= 5))
 accounts <- mutate(accounts, SOW = SALES12X/mrospend)
 # INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
 accounts <- mutate(accounts, trans_3month = TRANS01 + TRANS02 + TRANS03)
+
+## retrieve the factor variables.
+colnames(training[, lapply(training, is.factor) == T])
+colnames(testing_201605[, lapply(testing_201605, is.factor) == T])
 
 
 # split the dataset to training/test
@@ -226,8 +336,13 @@ levels(training$indseg1) <- levels(accounts$indseg1)
 levels(testing$indseg1) <- levels(accounts$indseg1)
 # levels(training$contract_group) <- levels(accounts$contract_group)
 # levels(testing$contract_group) <- levels(accounts$contract_group)
-levels(training$sellertype) <- levels(accounts$sellertype)
-levels(testing$sellertype) <- levels(accounts$sellertype)
+## make sure the levels in training set and prediction set are the same.
+levels(accounts$sellertype) <- c(levels(accounts$sellertype), "20", "73", "74", "75", "76",
+                                 "77", "78")
+levels(training$sellertype) <- c(levels(accounts$sellertype), "20", "73", "74", "75", "76",
+                                 "77", "78")
+levels(testing$sellertype) <- c(levels(accounts$sellertype), "20", "73", "74", "75", "76",
+                                "77", "78")
 levels(training$dunsstat) <- levels(accounts$dunsstat)
 levels(testing$dunsstat) <- levels(accounts$dunsstat)
 levels(training$Customer_Size) <- levels(accounts$Customer_Size)
@@ -237,6 +352,11 @@ levels(testing$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
 table(training$churn)/nrow(training)
 table(testing$churn)/nrow(testing)
 
+
+#######################################################
+## Principal components analysis (PCA)
+#######################################################
+pca <- prcomp(training, center = T, scale = T)
 
 # Use non-formula form to speed up.
 # Never use the default nodesize -- 1. 
@@ -271,6 +391,7 @@ RF_RFE_1000 <- train(training[, c(1:197, 199, 201, 203)],
                 tuneGrid = expand.grid(mtry = c(14, 16, 18)),
                 do.trace = T)
 RF_RFE_1000
+getTrainPerf(RF_RFE_1000)
 ggplot(varImp(RF_RFE_1000), top = 20)
 ggplot(RF_RFE_1000)
 plot(varImp(RF_RFE_1000), top = 20)
@@ -295,13 +416,14 @@ plot(varImp(RF_RFE_1000), top = 20)
 # Kappa: 0.5335432
 # Sens: 0.9239116
 
-# mtry = c(14, 16, 18) ntree = 1000, including sellertype       BEST
+# mtry = c(14, 16, 18) ntree = 1000, including sellertype
 # best mtry = 18
 # ROC: 0.8972970
 # Accuracy: 0.8468511
 # Kappa: 0.5336724
 # Sens: 0.9230694
 
+# picked
 # mtry = c(14, 16, 18) ntree = 1000 replace NA in distance as median, recode missing value
 # in contact_count to 0.
 # best mtry = 16
@@ -309,8 +431,9 @@ plot(varImp(RF_RFE_1000), top = 20)
 # Accuracy: 0.8457963
 # Kappa: 0.5366113
 # Sens: 0.9219089
-
-
+pred_train <- predict(RF_RFE_1000, newdata = training[, c(1:197, 199, 201, 203)], type = "prob")
+confusionMatrix(pred_train[, 2] >= 0.5, training$churn == "Yes", positive = "TRUE")
+###### 100% for all metrics!!!!!!!! Why?
 pred <- predict(RF_RFE_1000, newdata = testing[,c(1:197, 199, 201, 203)], 
                 type = "prob")
 confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
@@ -318,10 +441,30 @@ confusionMatrix(pred[, 2] >= 0.5, testing$churn == "Yes", positive = "TRUE")
 # Accuracy: 0.8466 
 # Kappa: 0.5403
 # Sens: 0.5923
+testing <- mutate(testing, lapse_score = pred[,2 ])
+write.csv(testing, "testing_accounts_scored.csv", row.names = F)
+
 library(ROCR)
 ROCRpred <- prediction(pred[,2], testing$churn)
 as.numeric(performance(ROCRpred, "auc")@y.values)
 # AUC value = 0.8983736
+perf <- performance(ROCRpred, "tpr", "fpr")
+plot(perf)
+plot(perf, colorize=T)
+# Plot the cutoff points on the curve
+plot(perf, colorize=T, 
+     print.cutoffs.at=seq(0,1,by=0.1), 
+     text.adj=c(1.2,1.2), 
+     avg="threshold", 
+     lwd=3)
+cutoffs <- data.frame(cut=perf@alpha.values[[1]], 
+                      fpr=perf@x.values[[1]], 
+                      tpr=perf@y.values[[1]])
+cutoffs <- cutoffs[order(cutoffs$tpr, decreasing=TRUE),]
+cutoffs
+head(subset(cutoffs, fpr < 0.2))
+plot(performance(ROCRpred, measure="lift", x.measure="rpp"), colorize=TRUE)
+plot(performance(ROCRpred, measure="sens", x.measure="spec"), colorize=TRUE)
 
 
 set.seed(80)
@@ -1025,6 +1168,7 @@ dotplot(compare_perf)
 dotplot(compare_perf, metric = "ROC")
 dotplot(compare_perf, metric = "Accuracy")
 dotplot(compare_perf, metric = "Sensitivity")
+dotplot(compare_perf, metric = "Specificity")
 dotplot(compare_perf, metric = "Kappa")
 rocDiffs <- diff(compare_perf, metric = "ROC")
 summary(rocDiffs)
@@ -1069,27 +1213,26 @@ testing_201510 <- mutate(testing_201510, distance_far = (DISTANCE >= 5))
 testing_201510 <- mutate(testing_201510, SOW = SALES12X/mrospend)
 # INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
 testing_201510 <- mutate(testing_201510, trans_3month = TRANS01 + TRANS02 + TRANS03)
-
 levels(testing_201510$churn) <- c("No", "Yes")
-levels(testing_201510$indseg1) <- levels(accounts$indseg1)
-levels(testing_201510$sellertype) <- levels(accounts$sellertype)
-levels(testing_201510$dunsstat) <- levels(accounts$dunsstat)
-levels(testing_201510$Customer_Size) <- levels(accounts$Customer_Size)
-levels(testing_201510$Corp_Maj_Flag) <- levels(accounts$Corp_Maj_Flag)
+levels(testing_201510$indseg1) <- levels(training$indseg1)
+levels(testing_201510$sellertype) <- levels(training$sellertype)
+levels(testing_201510$dunsstat) <- levels(training$dunsstat)
+levels(testing_201510$Customer_Size) <- levels(training$Customer_Size)
+levels(testing_201510$Corp_Maj_Flag) <- levels(training$Corp_Maj_Flag)
 
 #############################################################################
 ## Use RF_RFE_1000 to make predictions
 ## exclude missing values
-pred <- predict(RF_RFE_1000, newdata = testing_201510[,c(1:197, 199, 201, 203)], 
+pred_201510 <- predict(RF_RFE_1000, newdata = testing_201510[,c(1:197, 199, 201, 203)], 
                 type = "prob")
-confusionMatrix(pred[, 2] >= 0.5, testing_201510$churn == "Yes", positive = "TRUE")
+confusionMatrix(pred_201510[, 2] >= 0.5, testing_201510$churn == "Yes", positive = "TRUE")
 ## Evaluate the model on testing data.
 # Accuracy: 0.8392  
 # Kappa: 0.5142
 # Sens: 0.5429
 library(ROCR)
-ROCRpred <- prediction(pred[,2], testing_201510$churn)
-as.numeric(performance(ROCRpred, "auc")@y.values)
+ROCRpred_201510 <- prediction(pred_201510[,2], testing_201510$churn)
+as.numeric(performance(ROCRpred_201510, "auc")@y.values)
 # AUC value = 0.8932202
 
 #############################################################################
@@ -1122,9 +1265,9 @@ as.numeric(performance(ROCRpred, "auc")@y.values)
 ## Train RF on entire account dataset
 levels(accounts$churn) <- c("No", "Yes")
 set.seed(80)
-RF_RFE_1000 <- train(accounts[, c(1:197, 199, 201, 203)],
+RF_RFE_full <- train(accounts[, c(1:197, 199, 201, 203)],
                      accounts$churn,
-                     ntree = 1000,
+                     ntree = 500,
                      method = "rf", 
                      metric = "ROC",
                      trControl = trainControl(method = "cv", 
@@ -1133,3 +1276,291 @@ RF_RFE_1000 <- train(accounts[, c(1:197, 199, 201, 203)],
                                               classProbs = TRUE),
                      tuneGrid = expand.grid(mtry = c(14, 16, 18)),
                      do.trace = T)
+#############################################################################
+## Use RF_RFE_full to make predictions
+pred_201510_full <- predict(RF_RFE_full, newdata = testing_201510[,c(1:197, 199, 201, 203)], 
+                       type = "prob")
+## use 0.3 as cutoff.
+confusionMatrix(pred_201510_full[, 2] >= 0.5, testing_201510$churn == "Yes", positive = "TRUE")
+## Evaluate the model on testing data.
+# Accuracy: 0.8372  
+# Kappa: 0.5018
+# Sens: 0.5218
+library(ROCR)
+ROCRpred_201510_full <- prediction(pred_201510_full[,2], testing_201510$churn)
+as.numeric(performance(ROCRpred_201510_full, "auc")@y.values)
+# AUC value = 0.8932202
+
+############################################################################
+## Make predictions on latest data.
+## Better remove uncommon sellertypes next time.
+accounts_to_predict <- read.csv("accounts_to_predict.csv", stringsAsFactors = T)
+names(accounts_to_predict)
+colnames(accounts_to_predict[, lapply(accounts_to_predict, is.factor) == T])
+
+#### GREATEST TRICK to level set
+# common <- intersect(names(training), names(accounts_to_predict)) 
+# for (p in common) { 
+#   if (class(training[[p]]) == "factor") { 
+#     levels(accounts_to_predict[[p]]) <- levels(training[[p]]) 
+#   } 
+# }
+accounts_to_predict$CONTRACT_FLAG <- factor(accounts_to_predict$CONTRACT_FLAG, levels = levels(training$CONTRACT_FLAG))
+accounts_to_predict$indseg1 <- factor(accounts_to_predict$indseg1, levels = levels(training$indseg1))
+accounts_to_predict$Corp_Maj_Flag <- factor(accounts_to_predict$Corp_Maj_Flag, levels = levels(training$Corp_Maj_Flag))
+accounts_to_predict$dunsstat <- factor(accounts_to_predict$dunsstat, levels = levels(training$dunsstat))
+accounts_to_predict$Customer_Size <- factor(accounts_to_predict$Customer_Size, levels = levels(training$Customer_Size))
+# accounts_to_predict$mro_decile <- factor(accounts_to_predict$mro_decile, levels = levels(training$mro_decile))
+# accounts_to_predict$INVSOLFLG <- factor(accounts_to_predict$INVSOLFLG, levels = levels(training$INVSOLFLG))
+accounts_to_predict$DUNSSBUS <- NULL
+accounts_to_predict$DUNSPUBL <- NULL
+accounts_to_predict$contract_group <- NULL
+accounts_to_predict$sales_current <- accounts_to_predict$sales_201607
+accounts_to_predict$sales_201607 <- NULL
+names(accounts_to_predict)
+### return the variables that have missing values
+sort(colSums(is.na(accounts_to_predict)), decreasing = T)
+accounts_to_predict[is.na(accounts_to_predict$DISTANCE),]$DISTANCE <- median(accounts_to_predict$DISTANCE, na.rm = T)
+accounts_to_predict[is.na(accounts_to_predict$contact_count),]$contact_count <- 0
+### Remove the cases with missing values
+accounts_to_predict <- accounts_to_predict[complete.cases(accounts_to_predict),]
+
+
+### Feature engineering
+# WA_S12X ranges from -206700 to large number, hard to get any sense out of it.
+# Note that if WA_S12x = 0, discount will be a missing value.
+accounts_to_predict <- mutate(accounts_to_predict, discount = ((WA_S12X + 1) - (SALES12X - FINDS12X))/(WA_S12X+1))
+summary(accounts_to_predict$discount)
+accounts_to_predict[accounts_to_predict$discount < 0, ]$discount <- 0
+accounts_to_predict[accounts_to_predict$discount > 1, ]$discount <- 1
+accounts_to_predict <- mutate(accounts_to_predict, sellertype = CSG %/% 10000)
+accounts_to_predict$CSG <- NULL
+accounts_to_predict$sellertype <- factor(accounts_to_predict$sellertype, levels(training$sellertype))
+accounts_to_predict <- mutate(accounts_to_predict, distance_far = (DISTANCE >= 5))
+# accounts_to_predict <- mutate(accounts_to_predict, SOW = SALES12X/mrospend)
+# INCLUDING DISTANCE_FAR DIDN'T BOOST THE MODEL PERFORMANCE.
+accounts_to_predict <- mutate(accounts_to_predict, trans_3month = TRANS01 + TRANS02 + TRANS03)
+#############################################################################
+## Use RF_RFE_1000 to make predictions
+## missing values in sellertype -- originally 35.
+accounts_to_predict <- accounts_to_predict[is.na(accounts_to_predict$sellertype) != T, ]
+pred_201606 <- predict(RF_RFE_1000, newdata = accounts_to_predict[,c(2:199, 201, 203)], 
+                       type = "prob")
+## Create the churn prediction variable.
+accounts_to_predict <- mutate(accounts_to_predict, lapse_score = pred_201606[,2 ])
+accounts_to_predict <- mutate(accounts_to_predict, lapse_flag = ifelse(lapse_score >= 0.25, 1,0))
+accounts_to_predict$lapse_flag <- as.factor((accounts_to_predict$lapse_flag))
+## profile the customers
+## Need to convert lapse_flag to factor first, otherwise won't work.
+## Need to aggregate data by lapse flag and the interested variable.
+by_decile <- group_by(accounts_to_predict, mro_decile, lapse_flag)
+decile_count <- summarise(by_decile,
+                          count = n())
+DF <- data.frame(mro_decile = decile_count$mro_decile, lapse_flag = decile_count$lapse_flag, count = decile_count$count)
+ggplot(DF, aes(x = mro_decile, fill = count)) + geom_bar()
+## Notice the difference with and without position = "fill
+ggplot(accounts_to_predict, aes(x = mro_decile, fill = lapse_flag)) + geom_bar()
+ggplot(accounts_to_predict, aes(x = mro_decile, fill = lapse_flag)) + geom_bar(position = "fill")
+ggplot(accounts_to_predict, aes(x = mro_decile, fill = lapse_flag)) + geom_bar() +
+  scale_y_continuous(labels = percent_format())
+## display the % of accounts by two variables.
+ggplot(DF, aes(x = mro_decile, y = count, fill = lapse_flag)) + geom_bar(stat = "identity") + ylab("%")
+ggplot(DF, aes(x = mro_decile, y = count, fill = lapse_flag)) + geom_bar(position = "fill", stat = "identity") + ylab("%")
+## fastest plot
+accounts_to_predict <- mutate(accounts_to_predict, industry = ifelse(indseg1 == 0, "International/export",
+                                                                     ifelse(indseg1 == 1, "Government",
+                                                                            ifelse(indseg1 == 2, "Healthcare",
+                                                                                   ifelse(indseg1 == 3, "Heavy MFG",
+                                                                                          ifelse(indseg1 == 4, "Light MFG",
+                                                                                                 ifelse(indseg1 == 5, "Hospitality",
+                                                                                                        ifelse(indseg1 == 6, "Commercial Services",
+                                                                                                               ifelse(indseg1 == 7, "Retail",
+                                                                                                                      ifelse(indseg1 == 8, "Wholesale",
+                                                                                                                             ifelse(indseg1 == 9, "Transportation",
+                                                                                                                                    ifelse(indseg1 == 10, "Contractors",
+                                                                                                                                           ifelse(indseg1 == 11, "Property Mgt",
+                                                                                                                                                  ifelse(indseg1 == 12, "Natural resources", 
+                                                                                                                                                         ifelse(indseg1 == 13, "Resellers", "Other")))))))))))))))
+accounts_to_predict$industry <- as.factor(accounts_to_predict$industry)
+accounts_to_predict <- accounts_to_predict[accounts_to_predict$industry != "Other", ]
+ggplot(accounts_to_predict, aes(x = mro_decile, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict, aes(x = industry, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+accounts_to_predict <- mutate(accounts_to_predict, contract_type = ifelse(Corp_Maj_Flag == "C", "National Accts",
+                                                                          ifelse(Corp_Maj_Flag == "G", "Government GPO",
+                                                                                 ifelse(Corp_Maj_Flag == "H", "Healthcare GPO",
+                                                                                        ifelse(Corp_Maj_Flag == "M", "National Accts",
+                                                                                               ifelse(Corp_Maj_Flag == "N", "Local Contracts",
+                                                                                                      ifelse(Corp_Maj_Flag == "P", "Commercial GPO",
+                                                                                                             ifelse(Corp_Maj_Flag == "S", "Select Advantage",
+                                                                                                                    ifelse(Corp_Maj_Flag == "X", "Non-contract Local", "")))))))))
+accounts_to_predict$contract_type <- as.factor(accounts_to_predict$contract_type)
+ggplot(accounts_to_predict, aes(x = CONTRACT_FLAG, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict, aes(x = contract_type, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(accounts_to_predict, aes(x = INVSOLFLG, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict, aes(x = sellertype, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict, aes(x = TENURE, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict, aes(x = LINES12X, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict, aes(x = RECENCY, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+## using different colors.
+ggplot(accounts_to_predict, aes(x = TRANS12X, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts") + xlim(c(0,100)) + scale_fill_brewer(palette = "Blues")
+ggplot(accounts_to_predict, aes(x = TRANS12X, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+accounts_to_predict <- mutate(accounts_to_predict, SOW_range = ifelse(SOW < 0, "0",
+                                                                      ifelse(SOW < 0.2, "20%",
+                                                                             ifelse(SOW < 0.4, "40%",
+                                                                                    ifelse(SOW < 0.6, "60%",
+                                                                                           ifelse(SOW < 0.8, "80%", "100%"))))))
+accounts_to_predict$SOW_range <- as.factor(accounts_to_predict$SOW_range)
+accounts_to_predict_active <- accounts_to_predict[accounts_to_predict$sales_current >0, ]
+ggplot(accounts_to_predict_active, aes(x = TRANS12X, fill = lapse_flag)) + geom_bar(position = "fill") + xlim(c(0, 100)) + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = RECENCY, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = LINES12X, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = TENURE, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+accounts_to_predict_active[accounts_to_predict_active$sellertype %in% c(20, 31:34, 41:43, 71, 81, 82, 85),]$sellertype <- 0
+table(accounts_to_predict_active$sellertype)
+accounts_to_predict_active$sellertype <- factor(accounts_to_predict_active$sellertype)
+accounts_to_predict_active <- mutate(accounts_to_predict_active, coverage = ifelse(sellertype == 0, "not covered",
+                                                                                   ifelse(sellertype == 83, "FAR",
+                                                                                          ifelse(sellertype %in% c(84, 88), "AM",
+                                                                                                 ifelse(sellertype == 89, "Government ARM", 
+                                                                                                        ifelse(sellertype == 86, "TSA",
+                                                                                                               ifelse(sellertype %in% c(73:78), "ISA", "not covered")))))))
+ggplot(accounts_to_predict_active, aes(x = coverage, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = INVSOLFLG, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = mro_decile, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = industry, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(accounts_to_predict_active, aes(x = CONTRACT_FLAG, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = contract_type, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+ggplot(accounts_to_predict_active, aes(x = SOW_range, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts") + scale_x_discrete(limits=c("0","20%","40%", "60%", "80%", "100%"))
+ggplot(accounts_to_predict_active, aes(x = GP12X, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts") + xlim(c(0, 100))
+accounts_to_predict_active <- mutate(accounts_to_predict_active, distance_range = ifelse(DISTANCE < 2, "< 2",
+                                                                                         ifelse(DISTANCE < 5, "< 5",
+                                                                                                ifelse(DISTANCE < 10, "< 10",
+                                                                                                       ifelse(DISTANCE < 15, "< 15", "> 15")))))
+accounts_to_predict_active$distance_range <- as.factor(accounts_to_predict_active$distance_range)
+ggplot(accounts_to_predict_active, aes(x = distance_range, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts") + scale_x_discrete(limits = c("< 2", "< 5", "< 10", "< 15", "> 15"))
+ggplot(accounts_to_predict_active, aes(x = CONTACTS, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts") + xlim(c(0, 100))
+
+## See how the at-risk accounts are covered.
+accounts_to_predict <- mutate(accounts_to_predict, coverage = ifelse(sellertype == 0, "not covered",
+                                                                                   ifelse(sellertype == 83, "FAR",
+                                                                                          ifelse(sellertype %in% c(84, 88), "AM",
+                                                                                                 ifelse(sellertype == 89, "Government ARM", 
+                                                                                                        ifelse(sellertype == 86, "TSA",
+                                                                                                               ifelse(sellertype %in% c(73:78), "ISA", "not covered")))))))
+table(accounts_to_predict[accounts_to_predict$lapse_flag==1, ]$coverage)
+
+#### Export.
+write.csv(accounts_to_predict[, c(1, 204:205)], "accounts_scored.csv", row.names = F)
+write.csv(accounts_to_predict[, c(1, 19, 204:205)], "accounts_scored.csv", row.names = F)
+############################################################################
+# Measure running time of RF
+library(caret)
+time_start <- proc.time()
+set.seed(80)
+RF_time <- train(training[, c(1:197, 199, 201, 203)],
+                 training[, 198],
+                 ntree = 200,
+                 method = "rf", 
+                 metric = "ROC",
+                 trControl = trainControl(method = "cv", 
+                                          number = 2,
+                                          summaryFunction = multiClassSummary,
+                                          classProbs = TRUE),
+                 tuneGrid = expand.grid(mtry = c(16)),
+                 do.trace = T)
+proc.time() - time_start
+
+###################################
+## Reproducible example
+data(mtcars)
+time_start <- proc.time()
+set.seed(80)
+RF_time <- randomForest(mtcars[, c(2:11)],
+                 mtcars[, 1],
+                 ntree = 50000,
+                 nodesize = 1,
+                 tuneGrid = expand.grid(mtry = c(1, 3, 6, 9, 12, 15, 18, 21)),
+                 do.trace = T)
+proc.time() - time_start
+
+####################################
+## paralell R
+####################################
+library(doSNOW)
+library(foreach)
+registerDoSNOW(makeCluster(1, type = "SOCK"))
+time_start <- proc.time()
+set.seed(80)
+RF_time <- foreach(ntree = rep(50000, 1), .combine = combine, .packages = "randomForest") %dopar%
+  randomForest(mtcars[, c(2:11)],
+               mtcars[, 1],
+               ntree = ntree,
+               nodesize = 1,
+               tuneGrid = expand.grid(mtry = c(1, 3, 6, 9, 12, 15, 18, 21)),
+               do.trace = T)
+proc.time() - time_start
+
+install.packages("doSNOW")
+install.packages("foreach")
+library(doSNOW)
+library(foreach)
+library(randomForest)
+stopCluster(makeCluster(10, type = "SOCK"))
+registerDoSNOW(makeCluster(10, type = "SOCK"))
+time_start <- proc.time()
+set.seed(80)
+RF_time <- foreach(ntree = rep(1000, 10), .combine = combine, .packages = "randomForest") %dopar%
+  randomForest(training[, c(1:197, 199, 201, 203)],
+               training[, 198],
+               ntree = ntree,
+               nodesize = 1,
+               tuneGrid = expand.grid(mtry = 16),
+               do.trace = T)
+proc.time() - time_start
+
+time_start <- proc.time()
+set.seed(80)
+RF_time <- randomForest(training[, c(1:197, 199, 201, 203)],
+                        training[, 198],
+                        ntree = 1000,
+                        nodesize = 1,
+                        tuneGrid = expand.grid(mtry = 16),
+                        do.trace = T)
+proc.time() - time_start
+
+registerDoSNOW(makeCluster(1, type = "SOCK"))
+time_start <- proc.time()
+set.seed(80)
+x <- matrix(runif(500), 1000)
+y <- gl(2, 500)
+RF_time <- foreach(ntree = rep(1000, 1), .combine = combine, .packages = "randomForest") %dopar%
+  randomForest(x, y, ntree = ntree)
+proc.time() - time_start
+
+time_start <- proc.time()
+set.seed(80)
+RF_time <- randomForest(x, y, ntree = 1000)
+proc.time() - time_start
+
+# Remove other in industry
+accounts <- accounts[accounts$indseg1 != 14, ]
+accounts$industry <- factor(accounts$industry)
+
+## Remove uncommon sellertypes. 
+accounts$sellertype <- factor(accounts$sellertype)
+accounts[accounts$sellertype %in% c(31:34, 41:43, 71, 81, 82, 85),]$sellertype <- 0
+table(accounts$sellertype)
+accounts$sellertype <- factor(accounts$sellertype)
+table(accounts$sellertype)
+table(accounts$seller)
+
+testing_201604[testing_201604$sellertype %in% c(20, 31:34, 41:43, 71, 81, 82, 85),]$sellertype <- 0
+table(testing_201604$sellertype)
+testing_201604$sellertype <- factor(testing_201604$sellertype)
+testing_201604 <- mutate(testing_201604, coverage = ifelse(sellertype == 0, "not covered",
+                                                           ifelse(sellertype == 83, "FAR",
+                                                                  ifelse(sellertype %in% c(84, 88), "AM",
+                                                                         ifelse(sellertype == 86, "TSA",
+                                                                                ifelse(sellertype %in% c(73:78), "ISA", "not covered"))))))
+ggplot(testing_201604, aes(x = coverage, fill = lapse_flag)) + geom_bar(position = "fill") + ylab("% of accounts")
+
